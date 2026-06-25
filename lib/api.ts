@@ -47,6 +47,32 @@ export interface Stats {
   by_domain: Record<string, number>;
 }
 
+export interface AccessNode {
+  node_id: string;
+  name: string;
+  type: string;
+  url?: string;
+  count: number;
+}
+
+export interface Analytics {
+  total_events: number;
+  last_24h: number;
+  unique_nodes: number;
+  searches: number;
+  top_nodes: AccessNode[] | null;
+  by_kind: { kind: string; count: number }[] | null;
+  top_searches: { query: string; count: number }[] | null;
+  recent: {
+    node_id?: string;
+    name?: string;
+    type?: string;
+    kind: string;
+    query?: string;
+    created_at: string;
+  }[] | null;
+}
+
 export interface ActivityItem {
   id: string;
   type: string;
@@ -77,6 +103,7 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
 
 export const api = {
   stats: (signal?: AbortSignal) => getJSON<Stats>('/api/stats', signal),
+  analytics: (signal?: AbortSignal) => getJSON<Analytics>('/api/analytics?limit=12', signal),
   graph: (signal?: AbortSignal) => getJSON<GraphPayload>('/api/graph', signal),
   activity: (signal?: AbortSignal) =>
     getJSON<{ items: ActivityItem[] }>('/api/activity?limit=50', signal),

@@ -65,6 +65,25 @@ body::before {
 .wordmark small { font-weight: 500; color: var(--forest-ink); opacity: 0.55; }
 .spacer { flex: 1; }
 
+.nav-links { display: flex; gap: 6px; margin-left: 8px; }
+.nav-link {
+  font-family: var(--font-inter); font-weight: 500; font-size: 14px; text-decoration: none;
+  color: var(--forest-ink); padding: 6px 14px; border-radius: var(--radius-btn); border: 1px solid transparent;
+}
+.nav-link:hover { border-color: var(--pencil); }
+.nav-link.active { background: var(--forest-ink); color: var(--cream); }
+
+/* Access analytics rows with proportional bars. */
+.access-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--pencil); cursor: pointer; }
+.access-row:last-child { border-bottom: none; }
+.access-row .arank { font-family: var(--font-mono); font-size: 12px; opacity: 0.5; width: 18px; }
+.access-row .aname { flex: 1; min-width: 0; }
+.access-row .aname .t { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.access-row:hover .aname .t { background: var(--highlighter); }
+.access-row .acount { font-family: var(--font-display); font-weight: 800; font-size: 18px; }
+.bar { height: 6px; border-radius: 9999px; background: var(--forest-ink); margin-top: 5px; min-width: 4px; }
+.bar.y { background: var(--terracotta); }
+
 .api-input {
   background: var(--cream);
   border: 1px solid var(--pencil);
