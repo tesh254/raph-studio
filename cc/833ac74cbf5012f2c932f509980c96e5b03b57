@@ -1,0 +1,31 @@
+components/GraphExplorer.tsx
+  s_30200fc5b8ddb9::t_ec24a537b941fd 3-5,8-15,23-36,39-40,42,44-61,63-68,70-76,78-83,85,87-107,109-144,146-150,152-160,162-185,187
+  s_30200fc5b8ddb9::t_13a49a1ca461a7 161
+  s_30200fc5b8ddb9::t_59c2160453d1f4 108
+app/page.tsx
+  s_30200fc5b8ddb9::t_2891415b286eda 18,20,46,71,87,93,98,103,105-106,116,119-130,132,136-148,150-167,172,180-191,193-195,199-200,203,205
+app/globals.css
+  s_30200fc5b8ddb9::t_ba98884fc1e548 2-20,28-30,34,40-41,45,47-48,52-65,69-101,103,105-134,136-137,139-152,155-156,158-159,161,163-165,167-168,170-171,174-192
+app/layout.tsx
+  s_30200fc5b8ddb9::t_2e9f28752efb6e 2,5-20,23-24,29
+package.json
+  s_30200fc5b8ddb9::t_4ae67dd6c0aa90 13-14,20
+types/cytoscape-fcose.d.ts
+  s_30200fc5b8ddb9::t_7ffecbb097bed5 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "cc833ac74cbf5012f2c932f509980c96e5b03b57",
+  "prompts": {},
+  "sessions": {
+    "s_30200fc5b8ddb9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f22dfad5-df79-48ad-b5d4-2bf8ecfe50e2",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
