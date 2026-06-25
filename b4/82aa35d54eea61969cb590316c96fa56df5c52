@@ -1,0 +1,31 @@
+app/graph/page.tsx
+  s_30200fc5b8ddb9::t_39e362cc802148 1-118
+app/globals.css
+  s_30200fc5b8ddb9::t_0c0b4ce66bc85e 68-86
+lib/api.ts
+  s_30200fc5b8ddb9::t_ea127ed5c3d266 50-75
+  s_30200fc5b8ddb9::t_de939a6560c180 106
+components/Nav.tsx
+  s_30200fc5b8ddb9::t_ea0ae5555eead7 1-69
+app/layout.tsx
+  s_30200fc5b8ddb9::t_1ae119068dee9c 4
+  s_30200fc5b8ddb9::t_4b1f9eb0f6aa36 31-36
+app/page.tsx
+  s_30200fc5b8ddb9::t_1efd618e7b310a 3,7,27,29,31,35,37-38,40,46,48,56,61,63-66,69-70,72,75,77,84-117,135-142,144-146,160,170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "b482aa35d54eea61969cb590316c96fa56df5c52",
+  "prompts": {},
+  "sessions": {
+    "s_30200fc5b8ddb9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f22dfad5-df79-48ad-b5d4-2bf8ecfe50e2",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
