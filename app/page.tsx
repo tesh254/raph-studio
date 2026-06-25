@@ -15,9 +15,9 @@ import GraphExplorer from '@/components/GraphExplorer';
 
 type Conn = 'connecting' | 'ok' | 'bad';
 
+const KNOWN = ['func', 'type', 'file', 'doc', 'doc_chunk', 'file_chunk', 'markdown_chunk', 'memory'];
 function badgeClass(type: string): string {
-  const known = ['func', 'type', 'file', 'doc', 'doc_chunk', 'file_chunk', 'markdown_chunk', 'memory'];
-  return 'badge ' + (known.includes(type) ? type : 'other');
+  return 'badge ' + (KNOWN.includes(type) ? type : 'other');
 }
 
 function relTime(iso?: string): string {
@@ -43,9 +43,7 @@ export default function Page() {
   const [selected, setSelected] = useState<(GraphNode & { content?: string }) | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setApiUrl(getApiBase());
-  }, []);
+  useEffect(() => { setApiUrl(getApiBase()); }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -58,23 +56,19 @@ export default function Page() {
     }
   }, []);
 
-  // Initial + periodic full refresh.
   useEffect(() => {
     refresh();
     const id = setInterval(refresh, 8000);
     return () => clearInterval(id);
   }, [refresh, apiUrl]);
 
-  // Fast activity polling for a near-realtime feed of agent/sync changes.
   useEffect(() => {
     let alive = true;
     const tick = async () => {
       try {
         const a = await api.activity();
         if (alive) setActivity(a.items);
-      } catch {
-        /* surfaced via the connection indicator */
-      }
+      } catch { /* surfaced by the connection indicator */ }
     };
     tick();
     const id = setInterval(tick, 1500);
@@ -90,37 +84,26 @@ export default function Page() {
   const runSearch = (q: string) => {
     setQuery(q);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (!q.trim()) {
-      setResults([]);
-      setHighlight(new Set());
-      return;
-    }
+    if (!q.trim()) { setResults([]); setHighlight(new Set()); return; }
     searchTimer.current = setTimeout(async () => {
       try {
         const r = await api.search(q, 15);
         setResults(r.matches || []);
         setHighlight(new Set((r.matches || []).map((m) => m.id)));
-      } catch {
-        setResults([]);
-      }
+      } catch { setResults([]); }
     }, 220);
   };
 
   const openNode = async (id: string) => {
-    try {
-      const n = await api.node(id);
-      setSelected(n);
-    } catch {
-      setSelected(null);
-    }
+    try { setSelected(await api.node(id)); } catch { setSelected(null); }
   };
 
   return (
     <div className="app">
-      <header className="topbar">
+      <nav className="nav">
         <div className="brand">
-          <span className="dotmark" />
-          raph <small>studio</small>
+          <span className="logomark">rp</span>
+          <span className="wordmark">raph <small>studio</small></span>
         </div>
         <div className="spacer" />
         <input
@@ -130,92 +113,96 @@ export default function Page() {
           onChange={(e) => onApiChange(e.target.value.trim())}
           aria-label="raph studio API URL"
         />
-        <div className={`status ${conn === 'ok' ? 'ok' : conn === 'bad' ? 'bad' : ''}`}>
+        <span className={`status ${conn === 'ok' ? 'ok' : conn === 'bad' ? 'bad' : ''}`}>
           <span className="pulse" />
           {conn === 'ok' ? 'live' : conn === 'bad' ? 'offline' : 'connecting'}
+        </span>
+      </nav>
+
+      <div className="eyebrow">★ local-first knowledge graph</div>
+      <h1 className="hero-title">
+        See what your <span className="mark">agents</span> know.
+      </h1>
+
+      {conn === 'bad' && (
+        <div className="card blush" style={{ marginBottom: 20 }}>
+          Can&apos;t reach the raph studio API at <code>{apiUrl}</code>. Run <code>raph studio</code> locally,
+          then check the URL in the nav.
         </div>
-      </header>
+      )}
 
       <div className="layout">
         <div className="col">
-          <section className="panel">
-            <div className="panel-head"><h2>Overview</h2></div>
-            <div className="panel-body">
-              {conn === 'bad' && (
-                <div className="empty">
-                  Can&apos;t reach the raph studio API at <code>{apiUrl}</code>.<br />
-                  Run <code>raph studio</code> locally, then check the URL above.
-                </div>
-              )}
-              <div className="stats-grid">
-                <div className="stat"><div className="num">{stats?.nodes ?? '—'}</div><div className="label">nodes</div></div>
-                <div className="stat"><div className="num">{stats?.edges ?? '—'}</div><div className="label">edges</div></div>
-                <div className="stat"><div className="num">{stats?.workspaces ?? '—'}</div><div className="label">workspaces</div></div>
-                <div className="stat"><div className="num">{stats ? Object.keys(stats.by_type).length : '—'}</div><div className="label">node types</div></div>
+          <section className="card">
+            <div className="card-head"><h2>Overview</h2></div>
+            <div className="stats-grid">
+              <div className="stat"><div className="num">{stats?.nodes ?? '—'}</div><div className="label">nodes</div></div>
+              <div className="stat"><div className="num">{stats?.edges ?? '—'}</div><div className="label">edges</div></div>
+              <div className="stat"><div className="num">{stats?.workspaces ?? '—'}</div><div className="label">workspaces</div></div>
+              <div className="stat"><div className="num">{stats ? Object.keys(stats.by_type).length : '—'}</div><div className="label">types</div></div>
+            </div>
+            {stats && (
+              <div className="chips">
+                {Object.entries(stats.by_type).sort((a, b) => b[1] - a[1]).map(([t, c]) => (
+                  <span className="chip" key={t}><span className={badgeClass(t)}>{t}</span> <b>{c}</b></span>
+                ))}
               </div>
-              {stats && (
-                <div className="chips">
-                  {Object.entries(stats.by_type).sort((a, b) => b[1] - a[1]).map(([t, c]) => (
-                    <span className="chip" key={t}><span className={badgeClass(t)}>{t}</span> <b>{c}</b></span>
-                  ))}
+            )}
+          </section>
+
+          <section className="card">
+            <div className="card-head">
+              <h2>Graph explorer</h2>
+              <div className="spacer" />
+              <span className="card-note">parents centered · click a node</span>
+            </div>
+            <div className="graph-wrap">
+              <GraphExplorer nodes={graph.nodes} edges={graph.edges} onSelect={openNode} highlight={highlight} />
+              {selected && (
+                <div className="detail">
+                  <span className="close" onClick={() => setSelected(null)}>✕</span>
+                  <h3>{selected.name}</h3>
+                  <span className={badgeClass(selected.type)}>{selected.type}</span>{' '}
+                  <span className="rmeta">{selected.url}</span>
+                  {selected.content && <pre>{selected.content}</pre>}
                 </div>
               )}
             </div>
-          </section>
-
-          <section className="panel">
-            <div className="panel-head"><h2>Graph explorer</h2></div>
-            <GraphExplorer nodes={graph.nodes} edges={graph.edges} onSelect={openNode} highlight={highlight} />
             <div className="legend">
-              {[['func', 'functions'], ['type', 'types'], ['file', 'files'], ['doc', 'docs'], ['memory', 'memory']].map(([t, l]) => (
+              {[['file', 'files'], ['doc', 'docs'], ['func', 'functions'], ['type', 'types'], ['memory', 'memory']].map(([t, l]) => (
                 <span className="chip" key={t}><span className={badgeClass(t)}>{l}</span></span>
               ))}
             </div>
-            {selected && (
-              <div className="detail">
-                <span className="close" onClick={() => setSelected(null)}>✕</span>
-                <h3>{selected.name}</h3>
-                <span className={badgeClass(selected.type)}>{selected.type}</span>{' '}
-                <span className="rmeta">{selected.url}</span>
-                {selected.content && <pre>{selected.content}</pre>}
-              </div>
-            )}
           </section>
         </div>
 
         <div className="col">
-          <section className="panel">
-            <div className="panel-head"><h2>Search</h2></div>
-            <div className="panel-body">
-              <div className="searchbar">
-                <input
-                  placeholder="Search code, docs, memory…"
-                  value={query}
-                  onChange={(e) => runSearch(e.target.value)}
-                />
-              </div>
-              <div style={{ marginTop: 10 }}>
-                {results.map((r) => (
-                  <div className="result-row" key={r.id} onClick={() => openNode(r.id)}>
-                    <span className={badgeClass(r.type)}>{r.type}</span>
-                    <div style={{ minWidth: 0 }}>
-                      <div className="rname">{r.name}</div>
-                      <div className="rmeta">{r.url || r.id}</div>
-                    </div>
+          <section className="card">
+            <div className="card-head"><h2>Search</h2></div>
+            <div className="searchbar">
+              <input placeholder="Search code, docs, memory…" value={query} onChange={(e) => runSearch(e.target.value)} />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              {results.map((r) => (
+                <div className="result-row" key={r.id} onClick={() => openNode(r.id)}>
+                  <span className={badgeClass(r.type)}>{r.type}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div><span className="rname">{r.name}</span></div>
+                    <div className="rmeta">{r.url || r.id}</div>
                   </div>
-                ))}
-                {query && results.length === 0 && <div className="empty">No matches</div>}
-              </div>
+                </div>
+              ))}
+              {query && results.length === 0 && <div className="empty">No matches</div>}
             </div>
           </section>
 
-          <section className="panel">
-            <div className="panel-head">
+          <section className="card mint">
+            <div className="card-head">
               <h2>Live activity</h2>
               <div className="spacer" />
-              <span className="rmeta">updates every 1.5s</span>
+              <span className="card-note">every 1.5s</span>
             </div>
-            <div className="panel-body feed">
+            <div className="feed">
               {activity.length === 0 && <div className="empty">No recent activity</div>}
               {activity.map((a) => (
                 <div className="feed-item" key={a.id + a.updated_at}>
