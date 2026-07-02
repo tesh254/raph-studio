@@ -19,6 +19,24 @@ raph studio            # starts the local API at http://localhost:4545
 Then open the hosted dashboard (or run it locally) and point it at your local
 server. The API URL is editable in the top bar and persisted locally.
 
+## Access & security
+
+The local `raph studio` server binds to loopback and only answers requests whose
+`Host` is `localhost`/`127.0.0.1` (this blocks DNS-rebinding). It exposes its API
+to the browser only for:
+
+- any **loopback** origin (this dashboard on `localhost`, including a local dev
+  build on any port), and
+- the hosted dashboard at `https://raph-studio.pages.dev`.
+
+Requests from any other website are refused, so a page you happen to be visiting
+can't read or wipe your graph. If you self-host the dashboard at a different
+origin, allow it explicitly when starting the server:
+
+```bash
+RAPH_STUDIO_ALLOWED_ORIGINS="https://studio.example.com" raph studio
+```
+
 ## Develop
 
 ```bash
