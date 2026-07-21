@@ -29,10 +29,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${bricolage.variable} ${inter.variable} ${robotoMono.variable}`}>
       <body>
-        <div className="app">
-          <Nav />
-          {children}
-        </div>
+        <Nav />
+        <main>{children}</main>
       </body>
     </html>
   );

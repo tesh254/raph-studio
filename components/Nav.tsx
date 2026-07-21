@@ -32,8 +32,8 @@ export default function Nav() {
   };
 
   const links: [string, string][] = [
-    ['/', 'Analytics'],
-    ['/graph/', 'Graph'],
+    ['/', 'Graph'],
+    ['/attribution/', 'Attribution'],
   ];
 
   return (

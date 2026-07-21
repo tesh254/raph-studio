@@ -18,6 +18,7 @@ interface Props {
   edges: GraphEdge[];
   onSelect: (id: string) => void;
   highlight?: Set<string>;
+  focusId?: string | null;
 }
 
 // Cream-sketchbook palette per node type.
@@ -37,7 +38,7 @@ const LABEL_TEXT: Record<string, string> = {
 };
 
 // Cap rendered nodes so large graphs stay smooth.
-const MAX_NODES = 320;
+export const MAX_NODES = 320;
 
 function colorFor(t: string) { return COLOR[t] || '#b6b6b6'; }
 
@@ -75,12 +76,14 @@ function buildElements(nodes: GraphNode[], edges: GraphEdge[]) {
   return els;
 }
 
-export default function GraphExplorer({ nodes, edges, onSelect, highlight }: Props) {
+export default function GraphExplorer({ nodes, edges, onSelect, highlight, focusId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   const sigRef = useRef<string>('');
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const focusRef = useRef<string | null>(null);
+  focusRef.current = focusId ?? null;
 
   // Create the instance once.
   useEffect(() => {
@@ -160,6 +163,16 @@ export default function GraphExplorer({ nodes, edges, onSelect, highlight }: Pro
       gravity: 0.25,
     } as unknown as cytoscape.LayoutOptions);
     layout.one('layoutstop', () => {
+      // A pending deep-link focus wins over the default parent framing. Kill
+      // any viewport animation that targeted pre-layout positions first.
+      const f = focusRef.current ? cy.getElementById(focusRef.current) : null;
+      if (f && f.nonempty()) {
+        cy.stop();
+        f.addClass('hl');
+        cy.zoom(1.2);
+        cy.center(f);
+        return;
+      }
       // Focus parent nodes first.
       const parents = cy.nodes('[isParent = 1]');
       if (parents.nonempty()) cy.fit(parents, 60);
@@ -167,6 +180,18 @@ export default function GraphExplorer({ nodes, edges, onSelect, highlight }: Pro
     });
     layout.run();
   }, [nodes, edges]);
+
+  // Center the focused node when focus changes after layout has settled.
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || !focusId) return;
+    const node = cy.getElementById(focusId);
+    if (node.empty()) return;
+    node.addClass('hl');
+    cy.stop();
+    cy.zoom(Math.max(cy.zoom(), 1.2));
+    cy.center(node);
+  }, [focusId, nodes]);
 
   // Apply search highlight without re-laying out.
   useEffect(() => {

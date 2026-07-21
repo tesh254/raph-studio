@@ -73,6 +73,22 @@ export interface Analytics {
   }[] | null;
 }
 
+export interface TimelinePoint {
+  date: string; // YYYY-MM-DD (UTC)
+  memories: number;
+  handoffs: number;
+}
+
+export interface Timeline {
+  days: number;
+  points: TimelinePoint[];
+  total_memories: number;
+  active_memories: number;
+  total_handoffs: number;
+  fresh_handoffs: number;
+  used_handoffs: number;
+}
+
 export interface ActivityItem {
   id: string;
   type: string;
@@ -104,6 +120,8 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
 export const api = {
   stats: (signal?: AbortSignal) => getJSON<Stats>('/api/stats', signal),
   analytics: (signal?: AbortSignal) => getJSON<Analytics>('/api/analytics?limit=12', signal),
+  timeline: (days = 30, signal?: AbortSignal) =>
+    getJSON<Timeline>(`/api/timeline?days=${days}`, signal),
   graph: (signal?: AbortSignal) => getJSON<GraphPayload>('/api/graph', signal),
   activity: (signal?: AbortSignal) =>
     getJSON<{ items: ActivityItem[] }>('/api/activity?limit=50', signal),
