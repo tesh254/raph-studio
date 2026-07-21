@@ -1,0 +1,49 @@
+app/page.tsx
+  s_376147c4cce38e::t_1919dc548d25b4 3-6,13-15,17-23,27,36,40-44,46-57,59-64,66,69-76,78-93,97-100,102-108,110-121,123-139
+components/Nav.tsx
+  s_376147c4cce38e::t_001b7784545571 35-36
+app/layout.tsx
+  s_376147c4cce38e::t_e3def707baf568 32-33
+components/TimelineChart.tsx
+  s_376147c4cce38e::t_16a20e47edb721 1-125
+app/globals.css
+  s_376147c4cce38e::t_92cdeac09750b7 20,34,36-38,41-43,45,47,49,51,53,70-72,89-144,146-152,155-165,215-224,233,235-236
+  s_376147c4cce38e::t_a0da51f71cc2f7 243-247,249-260,262-263,265-268
+  s_376147c4cce38e::t_30b7537156b9a6 240-241
+app/graph/page.tsx
+  s_376147c4cce38e::t_0aec21cc1d710c 3-10
+app/attribution/page.tsx
+  s_376147c4cce38e::t_5f3442736f7435 40,46-53
+  s_376147c4cce38e::t_bb28732257dab0 117-120,124
+  s_376147c4cce38e::t_8b9a569061edd1 10,12
+  s_376147c4cce38e::t_4dc273a06e6154 113-116,121-123,125-136
+  s_376147c4cce38e::t_5aeb4f572f606c 1-9,11,13-33,35-39,41-45,54-112,137-211
+  s_376147c4cce38e::t_016e1c4b388762 34
+components/GraphExplorer.tsx
+  s_376147c4cce38e::t_9bce057084bb9b 79,85-86
+  s_376147c4cce38e::t_bfb825d4b90516 21
+  s_376147c4cce38e::t_eff715b9653fb4 168-169,171-175,184-190,194
+  s_376147c4cce38e::t_b523258c8d1834 166-167,170
+  s_376147c4cce38e::t_8403d7cc23a433 191-193
+  s_376147c4cce38e::t_295f294e22d650 41
+  s_376147c4cce38e::t_16e2d2bb5dfd64 195
+lib/api.ts
+  s_376147c4cce38e::t_40401092d55baa 123-124
+  s_376147c4cce38e::t_52cdae97fbd3dd 76-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "a4e558e32b60f97c6a672fb02b09fc3a28903f86",
+  "prompts": {},
+  "sessions": {
+    "s_376147c4cce38e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "97914b88-4e28-416b-9c70-bda273d0f1c1",
+        "model": "claude-fable-5"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
