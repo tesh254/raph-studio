@@ -346,3 +346,71 @@ code { font-family: var(--font-mono); background: var(--highlighter); padding: 1
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
+
+/* Handoff lifecycle status badges */
+.badge.status-fresh { background: var(--mint); }
+.badge.status-used { background: var(--whisper); color: var(--forest-ink); opacity: 0.8; }
+.badge.status-stale { background: var(--terracotta); color: var(--cream); border-color: var(--terracotta); }
+
+/* Knowledge browser: list + detail/editor (Memory, Handovers pages) */
+.browser { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .browser { grid-template-columns: 1fr; } }
+
+.kb-listcard { padding: 14px; }
+.kb-listcard .searchbar { margin-bottom: 8px; }
+.kb-list { display: flex; flex-direction: column; max-height: calc(100vh - 150px); overflow-y: auto; }
+.kb-row {
+  text-align: left; background: none; border: none; cursor: pointer;
+  padding: 11px 8px; border-bottom: 1px solid var(--pencil); border-radius: 6px;
+}
+.kb-row:last-child { border-bottom: none; }
+.kb-row:hover { background: var(--whisper); }
+.kb-row.active { background: var(--highlighter); }
+.kb-row-top { display: flex; align-items: center; gap: 8px; }
+.kb-row-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kb-row-meta { font-family: var(--font-mono); font-size: 11px; opacity: 0.55; margin-top: 3px; }
+
+.kb-detailcard { min-height: 300px; }
+.kb-detail-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.kb-title { margin: 0; flex: 1; font-size: 20px; font-weight: 700; line-height: 1.2; word-break: break-word; }
+.kb-fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 20px; }
+@media (max-width: 560px) { .kb-fields { grid-template-columns: 1fr; } }
+.kb-field { display: flex; flex-direction: column; gap: 2px; }
+.kb-field-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; }
+.kb-field-value { font-size: 13px; font-weight: 500; word-break: break-word; }
+.kb-content {
+  white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: 12px;
+  color: var(--forest-ink); background: var(--whisper); padding: 14px; border-radius: 8px;
+  margin-top: 16px; max-height: 460px; overflow: auto;
+}
+
+.kb-extra { margin-top: 16px; border-top: 1px solid var(--pencil); padding-top: 12px; }
+.kb-extra-head { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 8px; }
+.kb-extra-head b { font-family: var(--font-inter); }
+.kb-rev { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--pencil); font-size: 12px; }
+.kb-rev:last-child { border-bottom: none; }
+.kb-rev-n { font-weight: 600; }
+.kb-rev-meta { font-family: var(--font-mono); opacity: 0.55; }
+
+.kb-label { display: block; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin: 14px 0 5px; }
+.kb-input, .kb-textarea {
+  width: 100%; background: var(--cream); border: 1px solid var(--forest-ink); color: var(--forest-ink);
+  border-radius: var(--radius-btn); padding: 9px 12px; font-size: 14px; font-family: var(--font-inter);
+}
+.kb-textarea { font-family: var(--font-mono); font-size: 12px; line-height: 1.5; resize: vertical; }
+.kb-input:focus, .kb-textarea:focus { outline: none; box-shadow: 0 0 0 3px var(--highlighter); }
+.kb-actions { display: flex; gap: 10px; margin-top: 16px; }
+.kb-error {
+  background: var(--blush); border: 1px solid var(--terracotta); color: var(--terracotta);
+  border-radius: 8px; padding: 10px 12px; font-size: 13px;
+}
+
+.btn {
+  background: var(--cream); border: 1px solid var(--forest-ink); color: var(--forest-ink);
+  border-radius: var(--radius-btn); padding: 8px 16px; font-size: 13px; font-weight: 600;
+  font-family: var(--font-inter); cursor: pointer;
+}
+.btn:hover { background: var(--highlighter); }
+.btn.primary { background: var(--forest-ink); color: var(--cream); }
+.btn.primary:hover { background: var(--forest-ink); opacity: 0.9; }
+.btn:disabled { opacity: 0.5; cursor: default; }

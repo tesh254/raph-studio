@@ -9,6 +9,8 @@ type Conn = 'connecting' | 'ok' | 'bad';
 
 const NAV: { href: string; label: string; icon: string; hint: string }[] = [
   { href: '/', label: 'Graph', icon: '◉', hint: 'explore the knowledge graph' },
+  { href: '/memory/', label: 'Memory', icon: '✦', hint: 'durable knowledge & rules' },
+  { href: '/handovers/', label: 'Handovers', icon: '⇄', hint: 'work transfers between agents' },
   { href: '/attribution/', label: 'Attribution', icon: '▤', hint: 'what agents touch & write' },
 ];
 
