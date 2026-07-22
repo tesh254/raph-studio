@@ -32,6 +32,7 @@ export default function AttributionPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [timeline, setTimeline] = useState<Timeline | null>(null);
+  const [timelineErr, setTimelineErr] = useState(false);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [offline, setOffline] = useState(false);
 
@@ -46,11 +47,14 @@ export default function AttributionPage() {
       return;
     }
     // Separate fetch: older raph builds don't have /api/timeline, and that
-    // shouldn't mark the whole page offline.
+    // shouldn't mark the whole page offline. Keep the last good data on a
+    // transient error, and only show the "update raph" hint if we've never
+    // succeeded (so an available endpoint doesn't briefly look unsupported).
     try {
       setTimeline(await api.timeline(30));
+      setTimelineErr(false);
     } catch {
-      setTimeline(null);
+      setTimelineErr(true);
     }
   }, []);
 
@@ -114,7 +118,10 @@ export default function AttributionPage() {
               <div className="spacer" />
               <span className="card-note">created per day · last 30 days</span>
             </div>
-            {!timeline && (
+            {!timeline && !timelineErr && (
+              <div className="empty">Loading…</div>
+            )}
+            {!timeline && timelineErr && (
               <div className="empty">Timeline needs a newer raph build — update raph and restart <code>raph studio</code>.</div>
             )}
             {timeline && (timeline.points.some((p) => p.memories > 0 || p.handoffs > 0) ? (
@@ -140,7 +147,7 @@ export default function AttributionPage() {
             </div>
             {topNodes.length === 0 && <div className="empty">No access recorded yet — open nodes or search to populate this.</div>}
             {topNodes.map((n, i) => (
-              <div className="access-row" key={n.node_id} onClick={() => goToNode(n.node_id)}>
+              <button type="button" className="access-row" key={n.node_id} onClick={() => goToNode(n.node_id)}>
                 <span className="arank">{i + 1}</span>
                 <div className="aname">
                   <div className="t">{n.name || n.node_id}</div>
@@ -148,7 +155,7 @@ export default function AttributionPage() {
                 </div>
                 <span className={badgeClass(n.type)}>{n.type || '—'}</span>
                 <span className="acount">{n.count}</span>
-              </div>
+              </button>
             ))}
           </section>
 
@@ -175,7 +182,7 @@ export default function AttributionPage() {
             <div className="card-head"><h2>Top searches</h2></div>
             {searches.length === 0 && <div className="empty">No searches yet</div>}
             {searches.map((s) => (
-              <div className="access-row" key={s.query}>
+              <div className="access-row static" key={s.query}>
                 <div className="aname">
                   <div className="t">{s.query}</div>
                   <div className="bar y" style={{ width: `${Math.round((s.count / maxSearch) * 100)}%` }} />
@@ -194,13 +201,13 @@ export default function AttributionPage() {
             <div className="feed">
               {activity.length === 0 && <div className="empty">No recent activity</div>}
               {activity.map((a) => (
-                <div className="feed-item" key={a.id + a.updated_at} onClick={() => goToNode(a.id)}>
+                <button type="button" className="feed-item" key={a.id + a.updated_at} onClick={() => goToNode(a.id)}>
                   <span className={badgeClass(a.type)}>{a.doc_type || a.type}</span>
                   <div style={{ minWidth: 0 }}>
                     <div className="fname">{a.name}</div>
                     <div className="ftime">{relTime(a.updated_at)}{a.status ? ` · ${a.status}` : ''}</div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </section>

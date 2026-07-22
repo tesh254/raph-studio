@@ -35,6 +35,7 @@ interface Props {
   onClear?: () => void;
   highlight?: Set<string>;
   focusId?: string | null;
+  focusNonce?: number;
   hiddenTypes?: Set<string>;
   selectedId?: string | null;
   onViewport?: (v: ViewportSnapshot) => void;
@@ -139,7 +140,7 @@ function buildElements(nodes: GraphNode[], edges: GraphEdge[], hiddenTypes?: Set
 }
 
 const GraphExplorer = forwardRef<GraphHandle, Props>(function GraphExplorer(
-  { nodes, edges, onSelect, onClear, highlight, focusId, hiddenTypes, selectedId, onViewport },
+  { nodes, edges, onSelect, onClear, highlight, focusId, focusNonce, hiddenTypes, selectedId, onViewport },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -325,7 +326,8 @@ const GraphExplorer = forwardRef<GraphHandle, Props>(function GraphExplorer(
     runLayout(cy);
   }, [nodes, edges, hiddenTypes]);
 
-  // Apply search highlight without re-laying out.
+  // Apply search highlight without re-laying out. Depends on hiddenTypes too so
+  // it reapplies after a filter rebuild discards the classes.
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
@@ -339,9 +341,10 @@ const GraphExplorer = forwardRef<GraphHandle, Props>(function GraphExplorer(
         cy.edges().addClass('dim');
       }
     });
-  }, [highlight]);
+  }, [highlight, hiddenTypes]);
 
-  // Emphasize the selected node's neighborhood; fade the rest.
+  // Emphasize the selected node's neighborhood; fade the rest. Reapplies after
+  // a data refresh or a filter rebuild (both drop the classes).
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
@@ -355,19 +358,23 @@ const GraphExplorer = forwardRef<GraphHandle, Props>(function GraphExplorer(
       hood.edges().addClass('nbr');
       node.addClass('sel');
     });
-  }, [selectedId, nodes]);
+  }, [selectedId, nodes, hiddenTypes]);
 
-  // Center the focused node when focus changes after layout has settled.
+  // Center the focused node. Keyed on focusId + focusNonce (not nodes) so it
+  // fires on every explicit focus request — including re-focusing the same node
+  // — without hijacking the viewport on each periodic refresh. Clears the prior
+  // focus highlight so only one node carries it.
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy || !focusId) return;
     const node = cy.getElementById(focusId);
     if (node.empty()) return;
+    cy.nodes().removeClass('hl');
     node.addClass('hl');
     cy.stop();
     cy.zoom(Math.max(cy.zoom(), 1.2));
     cy.center(node);
-  }, [focusId, nodes]);
+  }, [focusId, focusNonce]);
 
   return <div className="graph-canvas" ref={containerRef} />;
 });

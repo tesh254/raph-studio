@@ -23,12 +23,21 @@ function GraphWorkspace() {
   const [selected, setSelected] = useState<(GraphNode & { content?: string }) | null>(null);
   const [neighbors, setNeighbors] = useState<GraphNode[]>([]);
   const [focusId, setFocusId] = useState<string | null>(null);
+  // Bumped on every focus request so re-focusing the same node still recenters.
+  const [focusTick, setFocusTick] = useState(0);
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set());
   const [crumbs, setCrumbs] = useState<Crumb[]>([]);
   const [viewport, setViewport] = useState<ViewportSnapshot | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchToken = useRef(0);
+  const selectToken = useRef(0);
   const deepLinked = useRef(false);
   const graphRef = useRef<GraphHandle>(null);
+
+  const requestFocus = useCallback((id: string) => {
+    setFocusId(id);
+    setFocusTick((t) => t + 1);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -57,21 +66,26 @@ function GraphWorkspace() {
   // Select a node: load its detail + neighbors, and optionally recenter the
   // canvas on it and record it in the breadcrumb trail.
   const selectNode = useCallback(async (id: string, opts?: { focus?: boolean }) => {
-    if (opts?.focus) setFocusId(id);
+    if (opts?.focus) requestFocus(id);
+    // Guard against out-of-order responses when navigating rapidly: only the
+    // latest selection may commit state.
+    const token = ++selectToken.current;
     try {
       const node = await api.node(id);
+      if (token !== selectToken.current) return;
       setSelected(node);
       pushCrumb({ id, name: node.name, type: node.type });
     } catch {
-      setSelected(null);
+      if (token === selectToken.current) setSelected(null);
     }
     try {
       const nb = await api.neighbors(id);
+      if (token !== selectToken.current) return;
       setNeighbors((nb.nodes || []).filter((n) => n.id !== id));
     } catch {
-      setNeighbors([]);
+      if (token === selectToken.current) setNeighbors([]);
     }
-  }, [pushCrumb]);
+  }, [pushCrumb, requestFocus]);
 
   const clearSelection = useCallback(() => {
     setSelected(null);
@@ -89,13 +103,18 @@ function GraphWorkspace() {
   const runSearch = (q: string) => {
     setQuery(q);
     if (searchTimer.current) clearTimeout(searchTimer.current);
+    // Bump the token so any in-flight request is ignored when it resolves.
+    const token = ++searchToken.current;
     if (!q.trim()) { setResults([]); setHighlight(new Set()); return; }
     searchTimer.current = setTimeout(async () => {
       try {
         const r = await api.search(q, 15);
+        if (token !== searchToken.current) return;
         setResults(r.matches || []);
         setHighlight(new Set((r.matches || []).map((m) => m.id)));
-      } catch { setResults([]); }
+      } catch {
+        if (token === searchToken.current) { setResults([]); setHighlight(new Set()); }
+      }
     }, 220);
   };
 
@@ -114,7 +133,9 @@ function GraphWorkspace() {
     return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [graph.nodes]);
 
-  const shown = Math.min(graph.nodes.length, MAX_NODES);
+  // The rendered count is what the canvas actually shows (after the type
+  // filters and the node cap) — the viewport snapshot is the source of truth.
+  const rendered = viewport ? viewport.nodes.length : Math.min(graph.nodes.length, MAX_NODES);
 
   return (
     <div className="stage">
@@ -126,6 +147,7 @@ function GraphWorkspace() {
         onClear={clearSelection}
         highlight={highlight}
         focusId={focusId}
+        focusNonce={focusTick}
         hiddenTypes={hiddenTypes}
         selectedId={selected?.id ?? null}
         onViewport={setViewport}
@@ -143,13 +165,13 @@ function GraphWorkspace() {
         {query ? (
           <div className="results">
             {results.map((r) => (
-              <div className="result-row" key={r.id} onClick={() => selectNode(r.id, { focus: true })}>
+              <button type="button" className="result-row" key={r.id} onClick={() => selectNode(r.id, { focus: true })}>
                 <span className={badgeClass(r.type)}>{r.type}</span>
                 <div style={{ minWidth: 0 }}>
                   <div><span className="rname">{r.name}</span></div>
                   <div className="rmeta">{r.url || r.id}</div>
                 </div>
-              </div>
+              </button>
             ))}
             {results.length === 0 && <div className="empty">No matches</div>}
           </div>
@@ -191,14 +213,14 @@ function GraphWorkspace() {
       {/* Node inspector */}
       {selected && (
         <div className="detail">
-          <span className="close" onClick={clearSelection}>✕</span>
+          <button type="button" className="close" onClick={clearSelection} aria-label="Close inspector">✕</button>
           <h3>{selected.name}</h3>
           <div className="detail-meta">
             <span className={badgeClass(selected.type)}>{selected.type}</span>
             {selected.url && <span className="rmeta">{selected.url}</span>}
           </div>
           <div className="detail-actions">
-            <button className="ctrl-btn wide" onClick={() => setFocusId(selected.id)}>Focus</button>
+            <button className="ctrl-btn wide" onClick={() => requestFocus(selected.id)}>Focus</button>
           </div>
           {selected.content && <pre>{selected.content}</pre>}
           <div className="nbr-head">
@@ -209,10 +231,10 @@ function GraphWorkspace() {
           ) : (
             <div className="nbr-list">
               {neighbors.map((n) => (
-                <div className="nbr-row" key={n.id} onClick={() => selectNode(n.id, { focus: true })}>
+                <button type="button" className="nbr-row" key={n.id} onClick={() => selectNode(n.id, { focus: true })}>
                   <span className={badgeClass(n.type)}>{n.type}</span>
                   <span className="nbr-name">{n.name.split('/').pop() || n.name}</span>
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -230,8 +252,8 @@ function GraphWorkspace() {
       <Minimap snapshot={viewport} onRecenter={(x, y) => graphRef.current?.centerModel(x, y)} />
 
       <div className="stage-meta">
-        {graph.nodes.length > MAX_NODES
-          ? `showing ${shown} of ${graph.nodes.length} nodes`
+        {rendered < graph.nodes.length
+          ? `showing ${rendered} of ${graph.nodes.length} nodes`
           : `${graph.nodes.length} nodes · ${graph.edges.length} edges`}
       </div>
 

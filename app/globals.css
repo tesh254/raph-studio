@@ -414,3 +414,18 @@ code { font-family: var(--font-mono); background: var(--highlighter); padding: 1
 .btn.primary { background: var(--forest-ink); color: var(--cream); }
 .btn.primary:hover { background: var(--forest-ink); opacity: 0.9; }
 .btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Rows that are now <button> for keyboard access: strip the UA button chrome
+   while keeping each component's own bottom divider and layout. */
+button.result-row, button.nbr-row, button.access-row, button.feed-item {
+  appearance: none; -webkit-appearance: none;
+  font: inherit; color: inherit; text-align: left; width: 100%;
+  border-top: 0; border-left: 0; border-right: 0; border-radius: 0;
+}
+.detail button.close {
+  appearance: none; -webkit-appearance: none; border: 0; background: none;
+  padding: 0; font-family: var(--font-mono); color: inherit; cursor: pointer;
+}
+/* Non-clickable rows (top searches) shouldn't imply interactivity. */
+.access-row.static { cursor: default; }
+.access-row.static:hover .aname .t { background: none; }
