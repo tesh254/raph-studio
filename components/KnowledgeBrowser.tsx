@@ -39,16 +39,34 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listAbort = useRef<AbortController | null>(null);
+  const detailAbort = useRef<AbortController | null>(null);
+  // Hold the loaders in refs so refresh/openDetail keep a stable identity even
+  // though the pages pass fresh inline callbacks on every render.
+  const loadRef = useRef(load); loadRef.current = load;
+  const loadDetailRef = useRef(loadDetail); loadDetailRef.current = loadDetail;
 
+  // Abort any in-flight list request before starting a new one so a slower,
+  // earlier query can't overwrite the results of a later one.
   const refresh = useCallback((q: string) => {
+    listAbort.current?.abort();
     const ctrl = new AbortController();
-    load(q, ctrl.signal)
-      .then((its) => { setItems(its); setOffline(false); })
+    listAbort.current = ctrl;
+    loadRef.current(q, ctrl.signal)
+      .then((its) => { if (!ctrl.signal.aborted) { setItems(its); setOffline(false); } })
       .catch((e) => { if (e?.name !== 'AbortError') setOffline(true); });
-    return () => ctrl.abort();
-  }, [load]);
+  }, []);
 
-  useEffect(() => refresh(''), [refresh]);
+  useEffect(() => {
+    refresh('');
+    // On unmount, drop the debounce timer and any in-flight requests so they
+    // can't call setState after the component is gone.
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      listAbort.current?.abort();
+      detailAbort.current?.abort();
+    };
+  }, [refresh]);
 
   const onQuery = (q: string) => {
     setQuery(q);
@@ -56,16 +74,19 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
     searchTimer.current = setTimeout(() => refresh(q), 220);
   };
 
+  // Same guard for detail loads: a superseded selection must not win.
   const openDetail = useCallback((id: string) => {
     setSelectedId(id);
     setEditing(false);
     setError(null);
     setDetail(null);
+    detailAbort.current?.abort();
     const ctrl = new AbortController();
-    loadDetail(id, ctrl.signal)
-      .then((d) => setDetail(d))
+    detailAbort.current = ctrl;
+    loadDetailRef.current(id, ctrl.signal)
+      .then((d) => { if (!ctrl.signal.aborted) setDetail(d); })
       .catch((e) => { if (e?.name !== 'AbortError') setError(e?.message || 'Failed to load'); });
-  }, [loadDetail]);
+  }, []);
 
   const startEdit = () => {
     if (!detail) return;
