@@ -1,40 +1,47 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import {
-  api,
-  type ActivityItem,
-  type Analytics,
-  type Stats,
-} from '@/lib/api';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { api, type GraphNode, type GraphPayload } from '@/lib/api';
+import GraphExplorer, { MAX_NODES, type GraphHandle, type ViewportSnapshot } from '@/components/GraphExplorer';
+import Minimap from '@/components/Minimap';
 
-const KNOWN = ['func', 'type', 'file', 'doc', 'doc_chunk', 'file_chunk', 'markdown_chunk', 'memory'];
+const KNOWN = ['func', 'type', 'file', 'doc', 'doc_chunk', 'file_chunk', 'markdown_chunk', 'memory', 'const', 'var'];
 function badgeClass(type: string): string {
   return 'badge ' + (KNOWN.includes(type) ? type : 'other');
 }
 
-function relTime(iso?: string): string {
-  if (!iso) return '';
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return '';
-  const s = Math.max(0, (Date.now() - t) / 1000);
-  if (s < 60) return `${Math.floor(s)}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
+interface Crumb { id: string; name: string; type: string; }
 
-export default function AnalyticsPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
+function GraphWorkspace() {
+  const searchParams = useSearchParams();
+  const [graph, setGraph] = useState<GraphPayload>({ nodes: [], edges: [] });
   const [offline, setOffline] = useState(false);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<GraphNode[]>([]);
+  const [highlight, setHighlight] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<(GraphNode & { content?: string }) | null>(null);
+  const [neighbors, setNeighbors] = useState<GraphNode[]>([]);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  // Bumped on every focus request so re-focusing the same node still recenters.
+  const [focusTick, setFocusTick] = useState(0);
+  const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set());
+  const [crumbs, setCrumbs] = useState<Crumb[]>([]);
+  const [viewport, setViewport] = useState<ViewportSnapshot | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchToken = useRef(0);
+  const selectToken = useRef(0);
+  const deepLinked = useRef(false);
+  const graphRef = useRef<GraphHandle>(null);
+
+  const requestFocus = useCallback((id: string) => {
+    setFocusId(id);
+    setFocusTick((t) => t + 1);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
-      const [s, a] = await Promise.all([api.stats(), api.analytics()]);
-      setStats(s);
-      setAnalytics(a);
+      setGraph(await api.graph());
       setOffline(false);
     } catch {
       setOffline(true);
@@ -43,130 +50,228 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, 4000);
+    const id = setInterval(refresh, 8000);
     return () => clearInterval(id);
   }, [refresh]);
 
-  useEffect(() => {
-    let alive = true;
-    const tick = async () => {
-      try {
-        const a = await api.activity();
-        if (alive) setActivity(a.items);
-      } catch { /* surfaced by the nav status */ }
-    };
-    tick();
-    const id = setInterval(tick, 1500);
-    return () => { alive = false; clearInterval(id); };
+  const pushCrumb = useCallback((c: Crumb) => {
+    setCrumbs((prev) => {
+      if (prev[prev.length - 1]?.id === c.id) return prev;
+      const existing = prev.findIndex((p) => p.id === c.id);
+      if (existing >= 0) return prev.slice(0, existing + 1);
+      return [...prev, c].slice(-8);
+    });
   }, []);
 
-  const topNodes = analytics?.top_nodes ?? [];
-  const maxCount = topNodes.reduce((m, n) => Math.max(m, n.count), 1);
-  const searches = analytics?.top_searches ?? [];
-  const maxSearch = searches.reduce((m, s) => Math.max(m, s.count), 1);
+  // Select a node: load its detail + neighbors, and optionally recenter the
+  // canvas on it and record it in the breadcrumb trail.
+  const selectNode = useCallback(async (id: string, opts?: { focus?: boolean }) => {
+    if (opts?.focus) requestFocus(id);
+    // Guard against out-of-order responses when navigating rapidly: only the
+    // latest selection may commit state.
+    const token = ++selectToken.current;
+    try {
+      const node = await api.node(id);
+      if (token !== selectToken.current) return;
+      setSelected(node);
+      pushCrumb({ id, name: node.name, type: node.type });
+    } catch {
+      if (token === selectToken.current) setSelected(null);
+    }
+    try {
+      const nb = await api.neighbors(id);
+      if (token !== selectToken.current) return;
+      setNeighbors((nb.nodes || []).filter((n) => n.id !== id));
+    } catch {
+      if (token === selectToken.current) setNeighbors([]);
+    }
+  }, [pushCrumb, requestFocus]);
+
+  const clearSelection = useCallback(() => {
+    setSelected(null);
+    setNeighbors([]);
+  }, []);
+
+  // Deep link (/?node=<id>): select and center that node once the graph is up.
+  useEffect(() => {
+    const id = searchParams.get('node');
+    if (!id || deepLinked.current || graph.nodes.length === 0) return;
+    deepLinked.current = true;
+    selectNode(id, { focus: true });
+  }, [searchParams, graph.nodes.length, selectNode]);
+
+  const runSearch = (q: string) => {
+    setQuery(q);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    // Bump the token so any in-flight request is ignored when it resolves.
+    const token = ++searchToken.current;
+    if (!q.trim()) { setResults([]); setHighlight(new Set()); return; }
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const r = await api.search(q, 15);
+        if (token !== searchToken.current) return;
+        setResults(r.matches || []);
+        setHighlight(new Set((r.matches || []).map((m) => m.id)));
+      } catch {
+        if (token === searchToken.current) { setResults([]); setHighlight(new Set()); }
+      }
+    }, 220);
+  };
+
+  const toggleType = (t: string) => {
+    setHiddenTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t); else next.add(t);
+      return next;
+    });
+  };
+
+  // Type toggles, ordered by frequency, drawn from what the graph actually holds.
+  const typeCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const n of graph.nodes) m.set(n.type, (m.get(n.type) || 0) + 1);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  }, [graph.nodes]);
+
+  // The rendered count is what the canvas actually shows (after the type
+  // filters and the node cap) — the viewport snapshot is the source of truth.
+  const rendered = viewport ? viewport.nodes.length : Math.min(graph.nodes.length, MAX_NODES);
 
   return (
-    <>
-      <div className="eyebrow">★ analytics</div>
-      <h1 className="hero-title">
-        What your agents <span className="mark">touch</span> most.
-      </h1>
+    <div className="stage">
+      <GraphExplorer
+        ref={graphRef}
+        nodes={graph.nodes}
+        edges={graph.edges}
+        onSelect={(id) => selectNode(id)}
+        onClear={clearSelection}
+        highlight={highlight}
+        focusId={focusId}
+        focusNonce={focusTick}
+        hiddenTypes={hiddenTypes}
+        selectedId={selected?.id ?? null}
+        onViewport={setViewport}
+      />
 
-      {offline && (
-        <div className="card blush" style={{ marginBottom: 20 }}>
-          Can&apos;t reach the raph studio API. Run <code>raph studio</code> locally and check the URL in the nav.
+      {/* Search + type filters */}
+      <div className="panel panel-search">
+        <input
+          placeholder="Search the graph…"
+          value={query}
+          spellCheck={false}
+          onChange={(e) => runSearch(e.target.value)}
+          aria-label="Search the graph"
+        />
+        {query ? (
+          <div className="results">
+            {results.map((r) => (
+              <button type="button" className="result-row" key={r.id} onClick={() => selectNode(r.id, { focus: true })}>
+                <span className={badgeClass(r.type)}>{r.type}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div><span className="rname">{r.name}</span></div>
+                  <div className="rmeta">{r.url || r.id}</div>
+                </div>
+              </button>
+            ))}
+            {results.length === 0 && <div className="empty">No matches</div>}
+          </div>
+        ) : (
+          <div className="filters">
+            {typeCounts.map(([t, c]) => (
+              <button
+                key={t}
+                className={`chip filter ${hiddenTypes.has(t) ? 'off' : ''}`}
+                onClick={() => toggleType(t)}
+                aria-pressed={!hiddenTypes.has(t)}
+                title={hiddenTypes.has(t) ? `Show ${t}` : `Hide ${t}`}
+              >
+                <span className={badgeClass(t)}>{t}</span> <b>{c}</b>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Breadcrumb trail of visited nodes */}
+      {crumbs.length > 0 && (
+        <div className="stage-crumbs">
+          {crumbs.map((c, i) => (
+            <span key={c.id + i} className="crumb-wrap">
+              {i > 0 && <span className="crumb-sep">›</span>}
+              <button
+                className={`crumb ${i === crumbs.length - 1 ? 'here' : ''}`}
+                onClick={() => selectNode(c.id, { focus: true })}
+                title={c.name}
+              >
+                {c.name.split('/').pop() || c.name}
+              </button>
+            </span>
+          ))}
         </div>
       )}
 
-      <div className="layout">
-        <div className="col">
-          <section className="card">
-            <div className="card-head"><h2>Access</h2></div>
-            <div className="stats-grid">
-              <div className="stat"><div className="num">{analytics?.total_events ?? '—'}</div><div className="label">total accesses</div></div>
-              <div className="stat"><div className="num">{analytics?.last_24h ?? '—'}</div><div className="label">last 24h</div></div>
-              <div className="stat"><div className="num">{analytics?.unique_nodes ?? '—'}</div><div className="label">nodes touched</div></div>
-              <div className="stat"><div className="num">{analytics?.searches ?? '—'}</div><div className="label">searches</div></div>
-            </div>
-            {analytics?.by_kind && analytics.by_kind.length > 0 && (
-              <div className="chips">
-                {analytics.by_kind.map((k) => (
-                  <span className="chip" key={k.kind}>{k.kind} <b>{k.count}</b></span>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="card">
-            <div className="card-head"><h2>Most accessed</h2></div>
-            {topNodes.length === 0 && <div className="empty">No access recorded yet — open nodes or search to populate this.</div>}
-            {topNodes.map((n, i) => (
-              <div className="access-row" key={n.node_id}>
-                <span className="arank">{i + 1}</span>
-                <div className="aname">
-                  <div className="t">{n.name || n.node_id}</div>
-                  <div className="bar" style={{ width: `${Math.round((n.count / maxCount) * 100)}%` }} />
-                </div>
-                <span className={badgeClass(n.type)}>{n.type || '—'}</span>
-                <span className="acount">{n.count}</span>
-              </div>
-            ))}
-          </section>
-
-          <section className="card">
-            <div className="card-head"><h2>Graph</h2></div>
-            <div className="stats-grid">
-              <div className="stat"><div className="num">{stats?.nodes ?? '—'}</div><div className="label">nodes</div></div>
-              <div className="stat"><div className="num">{stats?.edges ?? '—'}</div><div className="label">edges</div></div>
-              <div className="stat"><div className="num">{stats?.workspaces ?? '—'}</div><div className="label">workspaces</div></div>
-              <div className="stat"><div className="num">{stats ? Object.keys(stats.by_type).length : '—'}</div><div className="label">types</div></div>
-            </div>
-            {stats && (
-              <div className="chips">
-                {Object.entries(stats.by_type).sort((a, b) => b[1] - a[1]).map(([t, c]) => (
-                  <span className="chip" key={t}><span className={badgeClass(t)}>{t}</span> <b>{c}</b></span>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-
-        <div className="col">
-          <section className="card teal">
-            <div className="card-head"><h2>Top searches</h2></div>
-            {searches.length === 0 && <div className="empty">No searches yet</div>}
-            {searches.map((s) => (
-              <div className="access-row" key={s.query}>
-                <div className="aname">
-                  <div className="t">{s.query}</div>
-                  <div className="bar y" style={{ width: `${Math.round((s.count / maxSearch) * 100)}%` }} />
-                </div>
-                <span className="acount">{s.count}</span>
-              </div>
-            ))}
-          </section>
-
-          <section className="card mint">
-            <div className="card-head">
-              <h2>Live activity</h2>
-              <div className="spacer" />
-              <span className="card-note">every 1.5s</span>
-            </div>
-            <div className="feed">
-              {activity.length === 0 && <div className="empty">No recent activity</div>}
-              {activity.map((a) => (
-                <div className="feed-item" key={a.id + a.updated_at}>
-                  <span className={badgeClass(a.type)}>{a.doc_type || a.type}</span>
-                  <div style={{ minWidth: 0 }}>
-                    <div className="fname">{a.name}</div>
-                    <div className="ftime">{relTime(a.updated_at)}{a.status ? ` · ${a.status}` : ''}</div>
-                  </div>
-                </div>
+      {/* Node inspector */}
+      {selected && (
+        <div className="detail">
+          <button type="button" className="close" onClick={clearSelection} aria-label="Close inspector">✕</button>
+          <h3>{selected.name}</h3>
+          <div className="detail-meta">
+            <span className={badgeClass(selected.type)}>{selected.type}</span>
+            {selected.url && <span className="rmeta">{selected.url}</span>}
+          </div>
+          <div className="detail-actions">
+            <button className="ctrl-btn wide" onClick={() => requestFocus(selected.id)}>Focus</button>
+          </div>
+          {selected.content && <pre>{selected.content}</pre>}
+          <div className="nbr-head">
+            Neighbors <b>{neighbors.length}</b>
+          </div>
+          {neighbors.length === 0 ? (
+            <div className="empty small">No linked nodes</div>
+          ) : (
+            <div className="nbr-list">
+              {neighbors.map((n) => (
+                <button type="button" className="nbr-row" key={n.id} onClick={() => selectNode(n.id, { focus: true })}>
+                  <span className={badgeClass(n.type)}>{n.type}</span>
+                  <span className="nbr-name">{n.name.split('/').pop() || n.name}</span>
+                </button>
               ))}
             </div>
-          </section>
+          )}
         </div>
+      )}
+
+      {/* Canvas controls */}
+      <div className="stage-controls">
+        <button className="ctrl-btn" title="Zoom in" onClick={() => graphRef.current?.zoomIn()}>+</button>
+        <button className="ctrl-btn" title="Zoom out" onClick={() => graphRef.current?.zoomOut()}>−</button>
+        <button className="ctrl-btn" title="Fit to view" onClick={() => graphRef.current?.fit()}>⤢</button>
+        <button className="ctrl-btn" title="Re-run layout" onClick={() => graphRef.current?.relayout()}>↻</button>
       </div>
-    </>
+
+      <Minimap snapshot={viewport} onRecenter={(x, y) => graphRef.current?.centerModel(x, y)} />
+
+      <div className="stage-meta">
+        {rendered < graph.nodes.length
+          ? `showing ${rendered} of ${graph.nodes.length} nodes`
+          : `${graph.nodes.length} nodes · ${graph.edges.length} edges`}
+      </div>
+
+      {offline && (
+        <div className="stage-offline">
+          <div className="msg">
+            Can&apos;t reach the raph studio API. Run <code>raph studio</code> locally and check the URL in the sidebar.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function GraphPage() {
+  return (
+    <Suspense fallback={null}>
+      <GraphWorkspace />
+    </Suspense>
   );
 }
