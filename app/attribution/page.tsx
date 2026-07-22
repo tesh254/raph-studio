@@ -11,7 +11,7 @@ import {
 } from '@/lib/api';
 import TimelineChart from '@/components/TimelineChart';
 
-const KNOWN = ['func', 'type', 'file', 'doc', 'doc_chunk', 'file_chunk', 'markdown_chunk', 'memory'];
+const KNOWN = ['func', 'type', 'file', 'doc', 'doc_chunk', 'file_chunk', 'markdown_chunk', 'memory', 'const', 'var'];
 function badgeClass(type: string): string {
   return 'badge ' + (KNOWN.includes(type) ? type : 'other');
 }

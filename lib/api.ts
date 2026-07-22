@@ -129,4 +129,6 @@ export const api = {
     postJSON<{ mode: string; matches: GraphNode[] }>('/api/search', { query, limit }),
   node: (id: string, signal?: AbortSignal) =>
     getJSON<GraphNode & { memory?: unknown }>(`/api/node?id=${encodeURIComponent(id)}`, signal),
+  neighbors: (id: string) =>
+    postJSON<{ nodes: GraphNode[]; edges: GraphEdge[] }>('/api/neighbors', { node_id: id }),
 };
