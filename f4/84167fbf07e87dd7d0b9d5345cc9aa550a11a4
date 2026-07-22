@@ -1,0 +1,39 @@
+app/globals.css
+  s_1f2e6ddf8002c9::t_3cced3661228d4 417-431
+components/GraphExplorer.tsx
+  s_1f2e6ddf8002c9::t_b04b7bc0b1693e 38
+  s_1f2e6ddf8002c9::t_03f4d26c438896 143
+  s_1f2e6ddf8002c9::t_d3d4ffa09edb6d 329-330,344,346-347,361,363-366,372,377
+app/page.tsx
+  s_1f2e6ddf8002c9::t_2e9ee216eaa97f 106-107,112,115-117
+  s_1f2e6ddf8002c9::t_188fb405946496 150
+  s_1f2e6ddf8002c9::t_e657275751de16 255-256
+  s_1f2e6ddf8002c9::t_d48d046a42aeb8 168,174
+  s_1f2e6ddf8002c9::t_54aec14853fbac 136-138
+  s_1f2e6ddf8002c9::t_4c777c2d0e2547 69-72,75,79,83,86,88
+  s_1f2e6ddf8002c9::t_ed93fadc5408d9 216,223,234,237
+  s_1f2e6ddf8002c9::t_33286c8272eac9 26-27,32-33,37-40
+  s_1f2e6ddf8002c9::t_a441ab241c2fef 41
+app/attribution/page.tsx
+  s_1f2e6ddf8002c9::t_e337dae06a12ef 185
+  s_1f2e6ddf8002c9::t_d34593d34f692e 121-124
+  s_1f2e6ddf8002c9::t_185bb22b0307e7 150,158
+  s_1f2e6ddf8002c9::t_ff683bc7343a3d 204,210
+  s_1f2e6ddf8002c9::t_06e61f4e69a7c7 35,50-52,55,57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "f484167fbf07e87dd7d0b9d5345cc9aa550a11a4",
+  "prompts": {},
+  "sessions": {
+    "s_1f2e6ddf8002c9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "df08ec0e-b929-412f-923f-d2762ab14a0d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
