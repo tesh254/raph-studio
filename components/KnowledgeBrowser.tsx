@@ -105,7 +105,7 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
       }
       if (e.key !== 'Tab') return;
       const f = focusable();
-      if (f.length === 0) return;
+      if (f.length === 0) { e.preventDefault(); modalRef.current?.focus(); return; }
       const first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
@@ -305,7 +305,7 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
           aria-describedby="kb-del-desc"
           onClick={() => { if (!deleting) dismissDelete(); }}
         >
-          <div className="modal" ref={modalRef} onClick={(e) => e.stopPropagation()}>
+          <div className="modal" ref={modalRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
             <h3 id="kb-del-title" className="modal-title">Delete {kindLabel}?</h3>
             <p id="kb-del-desc" className="modal-body">
               <b>{detail.name}</b> will be permanently deleted. This can&apos;t be undone.
