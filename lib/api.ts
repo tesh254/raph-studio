@@ -121,6 +121,20 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
   return (await res.json()) as T;
 }
 
+// For POST endpoints that return an empty 200 (no JSON body), e.g. deletes.
+async function postVoid(path: string, body: unknown): Promise<void> {
+  const res = await fetch(getApiBase() + path, {
+    method: 'POST',
+    mode: 'cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = (await res.text().catch(() => '')).trim();
+    throw new Error(detail || `${path} → HTTP ${res.status}`);
+  }
+}
+
 export interface MemoryRecord {
   node: GraphNode & { content?: string };
   memory_key: string;
@@ -177,6 +191,7 @@ export const api = {
     getJSON<{ record: MemoryRecord; revisions: MemoryRevision[] }>(`/api/memory?id=${encodeURIComponent(id)}`, signal),
   updateMemory: (body: { node_id: string; title: string; content: string; tags: string[] }) =>
     postJSON<MemoryRecord>('/api/memory/update', body),
+  deleteMemory: (nodeID: string) => postVoid('/api/memory/delete', { node_id: nodeID }),
 
   handoffs: (query = '', signal?: AbortSignal) =>
     getJSON<{ items: GraphNode[] }>(`/api/handoffs?query=${encodeURIComponent(query)}`, signal),

@@ -413,6 +413,8 @@ code { font-family: var(--font-mono); background: var(--highlighter); padding: 1
 .btn:hover { background: var(--highlighter); }
 .btn.primary { background: var(--forest-ink); color: var(--cream); }
 .btn.primary:hover { background: var(--forest-ink); opacity: 0.9; }
+.btn.danger { border-color: var(--terracotta); color: var(--terracotta); }
+.btn.danger:hover { background: var(--terracotta); color: var(--cream); }
 .btn:disabled { opacity: 0.5; cursor: default; }
 
 /* Rows that are now <button> for keyboard access: strip the UA button chrome

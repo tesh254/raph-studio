@@ -26,9 +26,12 @@ interface Props {
   load: (query: string, signal: AbortSignal) => Promise<BrowserItem[]>;
   loadDetail: (id: string, signal: AbortSignal) => Promise<BrowserDetail>;
   save: (id: string, patch: { title: string; content: string; tags: string[] }) => Promise<void>;
+  // Optional permanent delete. When provided, a Delete action appears in the
+  // detail view (with an inline confirm).
+  onDelete?: (id: string) => Promise<void>;
 }
 
-export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetail, save }: Props) {
+export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetail, save, onDelete }: Props) {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<BrowserItem[]>([]);
   const [offline, setOffline] = useState(false);
@@ -37,6 +40,8 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: '', content: '', tags: '' });
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listAbort = useRef<AbortController | null>(null);
@@ -78,6 +83,7 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
   const openDetail = useCallback((id: string) => {
     setSelectedId(id);
     setEditing(false);
+    setConfirmingDelete(false);
     setError(null);
     setDetail(null);
     detailAbort.current?.abort();
@@ -109,6 +115,23 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
       setError(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onDeleteConfirmed = async () => {
+    if (!detail || !onDelete) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await onDelete(detail.id);
+      setConfirmingDelete(false);
+      setSelectedId(null);
+      setDetail(null);
+      refresh(query); // drop the deleted item from the list
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -160,6 +183,17 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
               <div className="kb-detail-head">
                 <h2 className="kb-title">{detail.name}</h2>
                 {detail.editable && <button className="btn" onClick={startEdit}>Edit</button>}
+                {onDelete && !confirmingDelete && (
+                  <button className="btn danger" onClick={() => { setConfirmingDelete(true); setError(null); }}>Delete</button>
+                )}
+                {onDelete && confirmingDelete && (
+                  <>
+                    <button className="btn danger" onClick={onDeleteConfirmed} disabled={deleting}>
+                      {deleting ? 'Deleting…' : 'Confirm delete'}
+                    </button>
+                    <button className="btn" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</button>
+                  </>
+                )}
               </div>
               <div className="kb-fields">
                 {detail.fields.map((f) => (
