@@ -106,7 +106,9 @@ async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await res.json()) as T;
 }
 
-async function postJSON<T>(path: string, body: unknown): Promise<T> {
+// Shared POST transport + error handling. Response parsing is left to callers
+// so JSON and empty-body endpoints don't duplicate the request/error path.
+async function postRequest(path: string, body: unknown): Promise<Response> {
   const res = await fetch(getApiBase() + path, {
     method: 'POST',
     mode: 'cors',
@@ -118,21 +120,17 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
     const detail = (await res.text().catch(() => '')).trim();
     throw new Error(detail || `${path} → HTTP ${res.status}`);
   }
+  return res;
+}
+
+async function postJSON<T>(path: string, body: unknown): Promise<T> {
+  const res = await postRequest(path, body);
   return (await res.json()) as T;
 }
 
 // For POST endpoints that return an empty 200 (no JSON body), e.g. deletes.
 async function postVoid(path: string, body: unknown): Promise<void> {
-  const res = await fetch(getApiBase() + path, {
-    method: 'POST',
-    mode: 'cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const detail = (await res.text().catch(() => '')).trim();
-    throw new Error(detail || `${path} → HTTP ${res.status}`);
-  }
+  await postRequest(path, body);
 }
 
 export interface MemoryRecord {

@@ -50,6 +50,10 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
   // though the pages pass fresh inline callbacks on every render.
   const loadRef = useRef(load); loadRef.current = load;
   const loadDetailRef = useRef(loadDetail); loadDetailRef.current = loadDetail;
+  // Latest query/selection, so async completions (save, delete) refresh and
+  // reconcile against what's current now — not what was current when they began.
+  const queryRef = useRef(query); queryRef.current = query;
+  const selectedIdRef = useRef(selectedId); selectedIdRef.current = selectedId;
 
   // Abort any in-flight list request before starting a new one so a slower,
   // earlier query can't overwrite the results of a later one.
@@ -73,10 +77,14 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
     };
   }, [refresh]);
 
+  // Dismiss the delete modal, clearing any error from an abandoned attempt so
+  // it doesn't linger in the detail view (matches the edit-Cancel convention).
+  const dismissDelete = () => { setConfirmingDelete(false); setError(null); };
+
   // Close the delete confirmation modal on Escape (unless mid-delete).
   useEffect(() => {
     if (!confirmingDelete) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !deleting) setConfirmingDelete(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !deleting) dismissDelete(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [confirmingDelete, deleting]);
@@ -117,8 +125,8 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
     try {
       await save(detail.id, { title: form.title.trim(), content: form.content, tags });
       setEditing(false);
-      openDetail(detail.id);   // reload the saved record
-      refresh(query);          // reflect title/tag changes in the list
+      openDetail(detail.id);       // reload the saved record
+      refresh(queryRef.current);   // reflect title/tag changes for the current query
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');
     } finally {
@@ -128,14 +136,19 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
 
   const onDeleteConfirmed = async () => {
     if (!detail || !onDelete) return;
+    const id = detail.id;
     setDeleting(true);
     setError(null);
     try {
-      await onDelete(detail.id);
+      await onDelete(id);
       setConfirmingDelete(false);
-      setSelectedId(null);
-      setDetail(null);
-      refresh(query); // drop the deleted item from the list
+      // Only clear the detail pane if the just-deleted item is still selected —
+      // the user may have navigated to another memory while the delete ran.
+      if (selectedIdRef.current === id) {
+        setSelectedId(null);
+        setDetail(null);
+      }
+      refresh(queryRef.current); // drop the deleted item, honoring the current query
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Delete failed');
     } finally {
@@ -257,7 +270,7 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
           role="dialog"
           aria-modal="true"
           aria-labelledby="kb-del-title"
-          onClick={() => { if (!deleting) setConfirmingDelete(false); }}
+          onClick={() => { if (!deleting) dismissDelete(); }}
         >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3 id="kb-del-title" className="modal-title">Delete {kindLabel}?</h3>
@@ -266,7 +279,7 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
             </p>
             {error && <div className="kb-error" style={{ marginBottom: 12 }}>{error}</div>}
             <div className="modal-actions">
-              <button className="btn" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</button>
+              <button className="btn" onClick={dismissDelete} disabled={deleting}>Cancel</button>
               <button className="btn danger" onClick={onDeleteConfirmed} disabled={deleting} autoFocus>
                 {deleting ? 'Deleting…' : 'Delete'}
               </button>
