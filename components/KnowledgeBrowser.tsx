@@ -73,6 +73,14 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
     };
   }, [refresh]);
 
+  // Close the delete confirmation modal on Escape (unless mid-delete).
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !deleting) setConfirmingDelete(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [confirmingDelete, deleting]);
+
   const onQuery = (q: string) => {
     setQuery(q);
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -183,16 +191,8 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
               <div className="kb-detail-head">
                 <h2 className="kb-title">{detail.name}</h2>
                 {detail.editable && <button className="btn" onClick={startEdit}>Edit</button>}
-                {onDelete && !confirmingDelete && (
+                {onDelete && (
                   <button className="btn danger" onClick={() => { setConfirmingDelete(true); setError(null); }}>Delete</button>
-                )}
-                {onDelete && confirmingDelete && (
-                  <>
-                    <button className="btn danger" onClick={onDeleteConfirmed} disabled={deleting}>
-                      {deleting ? 'Deleting…' : 'Confirm delete'}
-                    </button>
-                    <button className="btn" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</button>
-                  </>
                 )}
               </div>
               <div className="kb-fields">
@@ -250,6 +250,30 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
           )}
         </section>
       </div>
+
+      {onDelete && confirmingDelete && detail && (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="kb-del-title"
+          onClick={() => { if (!deleting) setConfirmingDelete(false); }}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 id="kb-del-title" className="modal-title">Delete {kindLabel}?</h3>
+            <p className="modal-body">
+              <b>{detail.name}</b> will be permanently deleted. This can&apos;t be undone.
+            </p>
+            {error && <div className="kb-error" style={{ marginBottom: 12 }}>{error}</div>}
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</button>
+              <button className="btn danger" onClick={onDeleteConfirmed} disabled={deleting} autoFocus>
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
