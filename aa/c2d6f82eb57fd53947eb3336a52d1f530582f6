@@ -1,0 +1,20 @@
+components/KnowledgeBrowser.tsx
+  s_56996ef3ace5c3::t_897e714c85d121 108
+  s_56996ef3ace5c3::t_2d8e90f980a237 308
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "aac2d6f82eb57fd53947eb3336a52d1f530582f6",
+  "prompts": {},
+  "sessions": {
+    "s_56996ef3ace5c3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06efe8731ffeDCNHW3f49M50Fz",
+        "model": "glm-5.2"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
