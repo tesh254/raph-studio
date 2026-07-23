@@ -54,6 +54,9 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
   // reconcile against what's current now — not what was current when they began.
   const queryRef = useRef(query); queryRef.current = query;
   const selectedIdRef = useRef(selectedId); selectedIdRef.current = selectedId;
+  const deletingRef = useRef(deleting); deletingRef.current = deleting;
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLElement | null>(null);
 
   // Abort any in-flight list request before starting a new one so a slower,
   // earlier query can't overwrite the results of a later one.
@@ -81,13 +84,39 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
   // it doesn't linger in the detail view (matches the edit-Cancel convention).
   const dismissDelete = () => { setConfirmingDelete(false); setError(null); };
 
-  // Close the delete confirmation modal on Escape (unless mid-delete).
+  // Modal lifecycle while the delete confirmation is open: lock body scroll,
+  // move focus into the dialog, trap Tab within it, close on Escape, and
+  // restore focus to the trigger on close. deletingRef avoids re-running this
+  // (and stealing focus) when the in-flight `deleting` flag toggles.
   useEffect(() => {
     if (!confirmingDelete) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !deleting) dismissDelete(); };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const focusable = () => Array.from(
+      modalRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') ?? [],
+    );
+    focusable()[0]?.focus(); // land on Cancel (the safe default) for a destructive action
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (!deletingRef.current) dismissDelete();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const f = focusable();
+      if (f.length === 0) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [confirmingDelete, deleting]);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      deleteTriggerRef.current?.focus(); // restore focus to the Delete trigger
+    };
+  }, [confirmingDelete]);
 
   const onQuery = (q: string) => {
     setQuery(q);
@@ -205,7 +234,10 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
                 <h2 className="kb-title">{detail.name}</h2>
                 {detail.editable && <button className="btn" onClick={startEdit}>Edit</button>}
                 {onDelete && (
-                  <button className="btn danger" onClick={() => { setConfirmingDelete(true); setError(null); }}>Delete</button>
+                  <button
+                    className="btn danger"
+                    onClick={(e) => { deleteTriggerRef.current = e.currentTarget; setConfirmingDelete(true); setError(null); }}
+                  >Delete</button>
                 )}
               </div>
               <div className="kb-fields">
@@ -270,17 +302,18 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
           role="dialog"
           aria-modal="true"
           aria-labelledby="kb-del-title"
+          aria-describedby="kb-del-desc"
           onClick={() => { if (!deleting) dismissDelete(); }}
         >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal" ref={modalRef} onClick={(e) => e.stopPropagation()}>
             <h3 id="kb-del-title" className="modal-title">Delete {kindLabel}?</h3>
-            <p className="modal-body">
+            <p id="kb-del-desc" className="modal-body">
               <b>{detail.name}</b> will be permanently deleted. This can&apos;t be undone.
             </p>
             {error && <div className="kb-error" style={{ marginBottom: 12 }}>{error}</div>}
             <div className="modal-actions">
               <button className="btn" onClick={dismissDelete} disabled={deleting}>Cancel</button>
-              <button className="btn danger" onClick={onDeleteConfirmed} disabled={deleting} autoFocus>
+              <button className="btn danger" onClick={onDeleteConfirmed} disabled={deleting}>
                 {deleting ? 'Deleting…' : 'Delete'}
               </button>
             </div>

@@ -426,6 +426,7 @@ code { font-family: var(--font-mono); background: var(--highlighter); padding: 1
 }
 .modal {
   width: 100%; max-width: 420px;
+  max-height: calc(100vh - 40px); overflow-y: auto;
   background: var(--cream); border: 1px solid var(--forest-ink); border-radius: var(--radius-card);
   padding: 22px; box-shadow: rgba(0, 0, 0, 0.18) 0px 12px 40px 0px;
 }
