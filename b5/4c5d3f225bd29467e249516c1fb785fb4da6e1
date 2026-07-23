@@ -1,0 +1,29 @@
+lib/api.ts
+  s_a57d653f4a07a1::t_2f385433b1e2a5 124-137
+  s_a57d653f4a07a1::t_80ca203c128711 194
+components/KnowledgeBrowser.tsx
+  s_a57d653f4a07a1::t_ef7f9e84a94274 186-196
+  s_a57d653f4a07a1::t_6938b8467442c4 121-137
+  s_a57d653f4a07a1::t_33bae035e8763d 29-31,34,43-44
+  s_a57d653f4a07a1::t_a9085137182fd6 86
+app/memory/page.tsx
+  s_a57d653f4a07a1::t_d646353f117eba 59
+app/globals.css
+  s_a57d653f4a07a1::t_c0e40816094979 416-417
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "b54c5d3f225bd29467e249516c1fb785fb4da6e1",
+  "prompts": {},
+  "sessions": {
+    "s_a57d653f4a07a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "428b4258-1ebc-4b78-b6d9-14553fd3a686",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
