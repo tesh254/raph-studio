@@ -52,6 +52,7 @@ export default function HandoversPage() {
         };
       }}
       save={async (id, patch) => { await api.updateDocument({ id, ...patch }); }}
+      onDelete={async (id) => { await api.deleteDocument(id); }}
     />
   );
 }
