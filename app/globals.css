@@ -9,6 +9,9 @@
   --mint: #d5f5c2;
   --blush: #f6d0ff;
   --terracotta: #cb5521;
+  /* Darker terracotta for destructive text/hover — meets WCAG AA (>=4.5:1)
+     against cream, which --terracotta (4.14:1) does not. */
+  --danger-ink: #a8401a;
 
   --font-display: var(--font-bricolage), 'Archivo Black', system-ui, sans-serif;
   --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -413,7 +416,27 @@ code { font-family: var(--font-mono); background: var(--highlighter); padding: 1
 .btn:hover { background: var(--highlighter); }
 .btn.primary { background: var(--forest-ink); color: var(--cream); }
 .btn.primary:hover { background: var(--forest-ink); opacity: 0.9; }
+.btn.danger { border-color: var(--danger-ink); color: var(--danger-ink); }
+.btn.danger:hover { background: var(--danger-ink); color: var(--cream); }
 .btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Confirmation modal */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  background: rgba(26, 51, 0, 0.32);
+  padding: 20px;
+}
+.modal {
+  width: 100%; max-width: 420px;
+  max-height: calc(100vh - 40px); overflow-y: auto;
+  background: var(--cream); border: 1px solid var(--forest-ink); border-radius: var(--radius-card);
+  padding: 22px; box-shadow: rgba(0, 0, 0, 0.18) 0px 12px 40px 0px;
+}
+.modal-title { margin: 0 0 10px; font-size: 18px; font-weight: 700; }
+.modal-body { margin: 0 0 16px; font-size: 14px; line-height: 1.5; }
+.modal-body b { word-break: break-word; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
 /* Rows that are now <button> for keyboard access: strip the UA button chrome
    while keeping each component's own bottom divider and layout. */

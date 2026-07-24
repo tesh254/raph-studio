@@ -26,9 +26,12 @@ interface Props {
   load: (query: string, signal: AbortSignal) => Promise<BrowserItem[]>;
   loadDetail: (id: string, signal: AbortSignal) => Promise<BrowserDetail>;
   save: (id: string, patch: { title: string; content: string; tags: string[] }) => Promise<void>;
+  // Optional permanent delete. When provided, a Delete action appears in the
+  // detail view (with an inline confirm).
+  onDelete?: (id: string) => Promise<void>;
 }
 
-export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetail, save }: Props) {
+export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetail, save, onDelete }: Props) {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<BrowserItem[]>([]);
   const [offline, setOffline] = useState(false);
@@ -37,6 +40,8 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: '', content: '', tags: '' });
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listAbort = useRef<AbortController | null>(null);
@@ -45,6 +50,13 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
   // though the pages pass fresh inline callbacks on every render.
   const loadRef = useRef(load); loadRef.current = load;
   const loadDetailRef = useRef(loadDetail); loadDetailRef.current = loadDetail;
+  // Latest query/selection, so async completions (save, delete) refresh and
+  // reconcile against what's current now — not what was current when they began.
+  const queryRef = useRef(query); queryRef.current = query;
+  const selectedIdRef = useRef(selectedId); selectedIdRef.current = selectedId;
+  const deletingRef = useRef(deleting); deletingRef.current = deleting;
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLElement | null>(null);
 
   // Abort any in-flight list request before starting a new one so a slower,
   // earlier query can't overwrite the results of a later one.
@@ -68,6 +80,44 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
     };
   }, [refresh]);
 
+  // Dismiss the delete modal, clearing any error from an abandoned attempt so
+  // it doesn't linger in the detail view (matches the edit-Cancel convention).
+  const dismissDelete = () => { setConfirmingDelete(false); setError(null); };
+
+  // Modal lifecycle while the delete confirmation is open: lock body scroll,
+  // move focus into the dialog, trap Tab within it, close on Escape, and
+  // restore focus to the trigger on close. deletingRef avoids re-running this
+  // (and stealing focus) when the in-flight `deleting` flag toggles.
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const focusable = () => Array.from(
+      modalRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') ?? [],
+    );
+    focusable()[0]?.focus(); // land on Cancel (the safe default) for a destructive action
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (!deletingRef.current) dismissDelete();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const f = focusable();
+      if (f.length === 0) { e.preventDefault(); modalRef.current?.focus(); return; }
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      deleteTriggerRef.current?.focus(); // restore focus to the Delete trigger
+    };
+  }, [confirmingDelete]);
+
   const onQuery = (q: string) => {
     setQuery(q);
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -78,6 +128,7 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
   const openDetail = useCallback((id: string) => {
     setSelectedId(id);
     setEditing(false);
+    setConfirmingDelete(false);
     setError(null);
     setDetail(null);
     detailAbort.current?.abort();
@@ -103,12 +154,34 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
     try {
       await save(detail.id, { title: form.title.trim(), content: form.content, tags });
       setEditing(false);
-      openDetail(detail.id);   // reload the saved record
-      refresh(query);          // reflect title/tag changes in the list
+      openDetail(detail.id);       // reload the saved record
+      refresh(queryRef.current);   // reflect title/tag changes for the current query
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onDeleteConfirmed = async () => {
+    if (!detail || !onDelete) return;
+    const id = detail.id;
+    setDeleting(true);
+    setError(null);
+    try {
+      await onDelete(id);
+      setConfirmingDelete(false);
+      // Only clear the detail pane if the just-deleted item is still selected —
+      // the user may have navigated to another memory while the delete ran.
+      if (selectedIdRef.current === id) {
+        setSelectedId(null);
+        setDetail(null);
+      }
+      refresh(queryRef.current); // drop the deleted item, honoring the current query
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -160,6 +233,12 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
               <div className="kb-detail-head">
                 <h2 className="kb-title">{detail.name}</h2>
                 {detail.editable && <button className="btn" onClick={startEdit}>Edit</button>}
+                {onDelete && (
+                  <button
+                    className="btn danger"
+                    onClick={(e) => { deleteTriggerRef.current = e.currentTarget; setConfirmingDelete(true); setError(null); }}
+                  >Delete</button>
+                )}
               </div>
               <div className="kb-fields">
                 {detail.fields.map((f) => (
@@ -216,6 +295,31 @@ export default function KnowledgeBrowser({ kindLabel, emptyHint, load, loadDetai
           )}
         </section>
       </div>
+
+      {onDelete && confirmingDelete && detail && (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="kb-del-title"
+          aria-describedby="kb-del-desc"
+          onClick={() => { if (!deleting) dismissDelete(); }}
+        >
+          <div className="modal" ref={modalRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+            <h3 id="kb-del-title" className="modal-title">Delete {kindLabel}?</h3>
+            <p id="kb-del-desc" className="modal-body">
+              <b>{detail.name}</b> will be permanently deleted. This can&apos;t be undone.
+            </p>
+            {error && <div className="kb-error" style={{ marginBottom: 12 }}>{error}</div>}
+            <div className="modal-actions">
+              <button className="btn" onClick={dismissDelete} disabled={deleting}>Cancel</button>
+              <button className="btn danger" onClick={onDeleteConfirmed} disabled={deleting}>
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

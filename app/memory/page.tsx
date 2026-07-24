@@ -56,6 +56,7 @@ export default function MemoryPage() {
         };
       }}
       save={async (id, patch) => { await api.updateMemory({ node_id: id, ...patch }); }}
+      onDelete={async (id) => { await api.deleteMemory(id); }}
     />
   );
 }
