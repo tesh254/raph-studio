@@ -1,0 +1,20 @@
+app/globals.css
+  s_a57d653f4a07a1::t_74e86beeaafee9 419-420
+  s_a57d653f4a07a1::t_afea91388ea72a 12-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "1d9b58da55e851309b42e26e01e16e8724e2b7c3",
+  "prompts": {},
+  "sessions": {
+    "s_a57d653f4a07a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "428b4258-1ebc-4b78-b6d9-14553fd3a686",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
