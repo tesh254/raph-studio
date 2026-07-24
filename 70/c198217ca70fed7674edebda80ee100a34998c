@@ -1,0 +1,21 @@
+app/handovers/page.tsx
+  s_a57d653f4a07a1::t_63506f35cc4f76 55
+lib/api.ts
+  s_a57d653f4a07a1::t_2336f8e8d282aa 200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "70c198217ca70fed7674edebda80ee100a34998c",
+  "prompts": {},
+  "sessions": {
+    "s_a57d653f4a07a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "428b4258-1ebc-4b78-b6d9-14553fd3a686",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
