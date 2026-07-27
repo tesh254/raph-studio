@@ -197,4 +197,5 @@ export const api = {
     getJSON<DocumentPayload>(`/api/document?id=${encodeURIComponent(id)}`, signal),
   updateDocument: (body: { id: string; title: string; content: string; tags: string[] }) =>
     postJSON<DocumentPayload>('/api/document/update', body),
+  deleteDocument: (id: string) => postVoid('/api/document/delete', { id }),
 };
