@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type Repo } from '@/lib/api';
 
 function fmtWhen(iso?: string): string {
@@ -13,13 +13,19 @@ function fmtWhen(iso?: string): string {
 export default function ReposPage() {
   const [repos, setRepos] = useState<Repo[] | null>(null);
   const [offline, setOffline] = useState(false);
+  // Monotonic request id: a slow earlier poll must not overwrite the result of
+  // a newer one (or flip `offline` back after a later request succeeded).
+  const reqId = useRef(0);
 
   const refresh = useCallback(async () => {
+    const id = ++reqId.current;
     try {
       const r = await api.repos();
+      if (id !== reqId.current) return;
       setRepos(r.items || []);
       setOffline(false);
     } catch {
+      if (id !== reqId.current) return;
       setOffline(true);
     }
   }, []);
@@ -52,15 +58,18 @@ export default function ReposPage() {
       )}
 
       {loading && (
-        <div className="repo-grid" aria-hidden="true">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div className="repo-card" key={i}>
-              <div className="skeleton sk-title" />
-              <div className="skeleton sk-line" />
-              <div className="skeleton sk-chips" />
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="sr-only" role="status">Loading repositories…</div>
+          <div className="repo-grid" aria-hidden="true">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div className="repo-card" key={i}>
+                <div className="skeleton sk-title" />
+                <div className="skeleton sk-line" />
+                <div className="skeleton sk-chips" />
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {!loading && !offline && repos && repos.length === 0 && (

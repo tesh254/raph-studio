@@ -132,7 +132,9 @@ html, body {
 .notice .btn { flex-shrink: 0; }
 
 /* Repos grid */
-.repo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+/* min(300px, 100%) so the track caps at the container width and the grid never
+   overflows horizontally on sub-300px viewports. */
+.repo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 16px; }
 .repo-card {
   background: var(--cream); border: 1px solid var(--forest-ink); border-radius: var(--radius-card);
   padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
@@ -523,12 +525,21 @@ button.result-row, button.nbr-row, button.access-row, button.feed-item {
   .sidebar {
     position: fixed; top: 0; left: 0; z-index: 60;
     width: 260px; height: 100vh;
-    transform: translateX(-100%); transition: transform 0.2s ease;
+    transform: translateX(-100%);
+    /* visibility:hidden takes the closed drawer out of the tab order and the
+       accessibility tree (transform alone leaves its links keyboard-focusable
+       off-screen). Delay hiding until the slide-out finishes so it animates. */
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0s linear 0.2s;
     border-right: 1px solid var(--forest-ink);
     overflow-y: auto;
   }
-  .shell.nav-open .sidebar { transform: translateX(0); }
-  @media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+  .shell.nav-open .sidebar {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.2s ease, visibility 0s;
+  }
+  @media (prefers-reduced-motion: reduce) { .sidebar { transition: visibility 0s; } }
 
   .nav-backdrop {
     display: block; position: fixed; inset: 0; z-index: 55;
@@ -542,9 +553,14 @@ button.result-row, button.nbr-row, button.access-row, button.feed-item {
      second scroll region past it. */
   .stage { height: calc(100vh - 52px); }
 
-  /* Keep the graph's floating panels within the viewport instead of clipping. */
+  /* Keep the graph's floating panels within the viewport instead of clipping.
+     The search panel stays top-left; the inspector drops to a bottom sheet so
+     the two no longer stack on top of each other when a node is selected. */
   .panel-search { width: calc(100vw - 32px); max-width: 320px; max-height: calc(100% - 220px); }
-  .detail { width: calc(100vw - 32px); max-width: 328px; }
+  .detail {
+    top: auto; bottom: 16px; left: 16px; right: 16px;
+    width: auto; max-width: none; max-height: 45%;
+  }
 
   .page { padding: 18px 14px 32px; }
   .page-title { font-size: 24px; }
