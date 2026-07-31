@@ -1,0 +1,27 @@
+app/repos/page.tsx
+  s_a57d653f4a07a1::t_87286c378417b4 16-18,21,24,28
+  s_a57d653f4a07a1::t_bf8c631b76b268 61-72
+  s_a57d653f4a07a1::t_7698119001e982 3
+app/globals.css
+  s_a57d653f4a07a1::t_a7238168bb8a53 556-558,560-563
+  s_a57d653f4a07a1::t_96e1577841b344 135-137
+  s_a57d653f4a07a1::t_61c3f14f903861 528-533,537-542
+components/AppShell.tsx
+  s_a57d653f4a07a1::t_8031c396059d7f 3,14,16,18-23,26-55,57-62,69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.19",
+  "base_commit_sha": "0760cbc65e6799da5cc31d0baf100ae7549323cd",
+  "prompts": {},
+  "sessions": {
+    "s_a57d653f4a07a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "428b4258-1ebc-4b78-b6d9-14553fd3a686",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
