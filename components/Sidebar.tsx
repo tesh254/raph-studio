@@ -9,6 +9,7 @@ type Conn = 'connecting' | 'ok' | 'bad';
 
 const NAV: { href: string; label: string; icon: string; hint: string }[] = [
   { href: '/', label: 'Graph', icon: '◉', hint: 'explore the knowledge graph' },
+  { href: '/repos/', label: 'Repos', icon: '⧉', hint: 'indexed codebases' },
   { href: '/memory/', label: 'Memory', icon: '✦', hint: 'durable knowledge & rules' },
   { href: '/handovers/', label: 'Handovers', icon: '⇄', hint: 'work transfers between agents' },
   { href: '/attribution/', label: 'Attribution', icon: '▤', hint: 'what agents touch & write' },
@@ -71,8 +72,12 @@ export default function Sidebar() {
             aria-label="raph studio API URL"
           />
         </label>
-        <span className={`status ${conn === 'ok' ? 'ok' : conn === 'bad' ? 'bad' : ''}`}>
-          <span className="pulse" />
+        <span
+          className={`status ${conn === 'ok' ? 'ok' : conn === 'bad' ? 'bad' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="pulse" aria-hidden="true" />
           {conn === 'ok' ? 'live' : conn === 'bad' ? 'offline' : 'connecting'}
         </span>
       </div>

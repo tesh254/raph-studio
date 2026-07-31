@@ -5,11 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { api, type GraphNode, type GraphPayload } from '@/lib/api';
 import GraphExplorer, { MAX_NODES, type GraphHandle, type ViewportSnapshot } from '@/components/GraphExplorer';
 import Minimap from '@/components/Minimap';
-
-const KNOWN = ['func', 'type', 'file', 'doc', 'doc_chunk', 'file_chunk', 'markdown_chunk', 'memory', 'const', 'var'];
-function badgeClass(type: string): string {
-  return 'badge ' + (KNOWN.includes(type) ? type : 'other');
-}
+import { badgeClass } from '@/lib/badges';
 
 interface Crumb { id: string; name: string; type: string; }
 
