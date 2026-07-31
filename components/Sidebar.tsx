@@ -15,7 +15,7 @@ const NAV: { href: string; label: string; icon: string; hint: string }[] = [
   { href: '/attribution/', label: 'Attribution', icon: '▤', hint: 'what agents touch & write' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ inert = false }: { inert?: boolean }) {
   const pathname = usePathname();
   const [apiUrl, setApiUrl] = useState(DEFAULT_API);
   const [conn, setConn] = useState<Conn>('connecting');
@@ -40,7 +40,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" inert={inert || undefined}>
       <div className="brand">
         <span className="logomark">rp</span>
         <span className="wordmark">raph <small>studio</small></span>

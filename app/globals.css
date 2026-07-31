@@ -539,7 +539,10 @@ button.result-row, button.nbr-row, button.access-row, button.feed-item {
     visibility: visible;
     transition: transform 0.2s ease, visibility 0s;
   }
-  @media (prefers-reduced-motion: reduce) { .sidebar { transition: visibility 0s; } }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .shell.nav-open .sidebar { transition: visibility 0s; }
+  }
 
   .nav-backdrop {
     display: block; position: fixed; inset: 0; z-index: 55;
