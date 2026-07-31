@@ -1,0 +1,24 @@
+components/AppShell.tsx
+  s_a57d653f4a07a1::t_89a2c3ea5b2dc4 7-8,16,19-32,36-40,82-89,115-116
+app/globals.css
+  s_a57d653f4a07a1::t_b39a3d8b679b77 542-545
+components/Sidebar.tsx
+  s_a57d653f4a07a1::t_ff2bf1d8d36e45 18
+  s_a57d653f4a07a1::t_70bdb9f6714552 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.19",
+  "base_commit_sha": "0b6e6a57000fa6f035adc65af84903ad163cf6b6",
+  "prompts": {},
+  "sessions": {
+    "s_a57d653f4a07a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "428b4258-1ebc-4b78-b6d9-14553fd3a686",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
