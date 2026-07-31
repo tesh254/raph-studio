@@ -168,8 +168,22 @@ export interface DocumentPayload {
   chunk_count: number;
 }
 
+// An indexed codebase, as returned by /api/repos. Repos are workspaces the
+// indexer tagged with a filesystem root; the server groups them because the
+// per-node workspace never reaches the client.
+export interface Repo {
+  workspace: string;
+  root: string;
+  name: string;
+  nodes: number;
+  files: number;
+  by_domain: Record<string, number> | null;
+  last_indexed?: string;
+}
+
 export const api = {
   stats: (signal?: AbortSignal) => getJSON<Stats>('/api/stats', signal),
+  repos: (signal?: AbortSignal) => getJSON<{ items: Repo[] }>('/api/repos', signal),
   analytics: (signal?: AbortSignal) => getJSON<Analytics>('/api/analytics?limit=12', signal),
   timeline: (days = 30, signal?: AbortSignal) =>
     getJSON<Timeline>(`/api/timeline?days=${days}`, signal),

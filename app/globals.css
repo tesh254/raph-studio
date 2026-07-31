@@ -104,8 +104,64 @@ html, body {
 .status.bad .pulse { background: var(--terracotta); }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-/* Contained pages (attribution) */
+/* Mobile top bar + drawer toggle. Hidden on desktop; the sidebar is a static
+   column there. Shown below the drawer breakpoint (see media query below). */
+.topbar { display: none; }
+.nav-toggle {
+  appearance: none; -webkit-appearance: none;
+  width: 38px; height: 38px; display: grid; place-items: center;
+  background: var(--cream); border: 1px solid var(--forest-ink); border-radius: var(--radius-btn);
+  color: var(--forest-ink); font-size: 18px; line-height: 1; cursor: pointer;
+}
+.topbar-brand { font-family: var(--font-inter); font-weight: 700; font-size: 16px; }
+.topbar-brand small { font-weight: 500; opacity: 0.55; }
+.nav-backdrop { display: none; }
+
+/* Contained pages (attribution, repos) */
 .page { max-width: 1320px; margin: 0 auto; padding: 24px 20px 40px; }
+.page-head { margin-bottom: 20px; }
+.page-title { font-family: var(--font-display); font-weight: 800; font-size: 28px; margin: 0; letter-spacing: 0.01em; }
+.page-sub { font-family: var(--font-mono); font-size: 12px; opacity: 0.6; margin: 6px 0 0; }
+
+/* Inline notices (errors / offline) with an action. */
+.notice {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  border-radius: var(--radius-card); padding: 14px 16px; margin-bottom: 20px; font-size: 14px; line-height: 1.5;
+}
+.notice-bad { background: var(--blush); border: 1px solid var(--forest-ink); }
+.notice .btn { flex-shrink: 0; }
+
+/* Repos grid */
+/* min(300px, 100%) so the track caps at the container width and the grid never
+   overflows horizontally on sub-300px viewports. */
+.repo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 16px; }
+.repo-card {
+  background: var(--cream); border: 1px solid var(--forest-ink); border-radius: var(--radius-card);
+  padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+}
+.repo-card-head { display: flex; align-items: baseline; gap: 10px; }
+.repo-name { margin: 0; flex: 1; min-width: 0; font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.repo-files { font-family: var(--font-mono); font-size: 11px; opacity: 0.6; white-space: nowrap; }
+.repo-root { font-family: var(--font-mono); font-size: 11px; opacity: 0.6; word-break: break-all; }
+.repo-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.repo-foot { margin-top: auto; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
+
+/* Loading skeletons — a calmer first paint than bare "Loading…" text. */
+.skeleton {
+  background: linear-gradient(90deg, var(--whisper) 25%, #e9e9e4 37%, var(--whisper) 63%);
+  background-size: 400% 100%; border-radius: 6px; animation: shimmer 1.4s ease infinite;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+.sk-title { height: 20px; width: 55%; }
+.sk-line { height: 12px; width: 80%; }
+.sk-chips { height: 24px; width: 70%; }
+
+/* Illustrated empty state */
+.empty-state { text-align: center; padding: 56px 20px; border: 1px dashed var(--pencil); border-radius: var(--radius-card); }
+.empty-glyph { font-size: 40px; opacity: 0.35; line-height: 1; }
+.empty-title { font-size: 16px; font-weight: 700; margin-top: 12px; }
+.empty-hint { font-size: 13px; opacity: 0.65; margin-top: 6px; line-height: 1.6; }
 
 /* Full-bleed graph workspace. The sketchbook dot grid lives here — it reads
    as canvas texture, not page chrome. */
@@ -452,3 +508,63 @@ button.result-row, button.nbr-row, button.access-row, button.feed-item {
 /* Non-clickable rows (top searches) shouldn't imply interactivity. */
 .access-row.static { cursor: default; }
 .access-row.static:hover .aname .t { background: none; }
+
+/* ---- Responsive: collapse the sidebar into a drawer on narrow viewports ---- */
+@media (max-width: 720px) {
+  /* The shell stacks: topbar, then content. The sidebar leaves the flow and
+     becomes an off-canvas drawer. */
+  .shell { display: block; height: auto; overflow: visible; }
+
+  .topbar {
+    display: flex; align-items: center; gap: 12px;
+    height: 52px; padding: 0 14px;
+    position: sticky; top: 0; z-index: 40;
+    background: var(--cream); border-bottom: 1px solid var(--pencil);
+  }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; z-index: 60;
+    width: 260px; height: 100vh;
+    transform: translateX(-100%);
+    /* visibility:hidden takes the closed drawer out of the tab order and the
+       accessibility tree (transform alone leaves its links keyboard-focusable
+       off-screen). Delay hiding until the slide-out finishes so it animates. */
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0s linear 0.2s;
+    border-right: 1px solid var(--forest-ink);
+    overflow-y: auto;
+  }
+  .shell.nav-open .sidebar {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.2s ease, visibility 0s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .shell.nav-open .sidebar { transition: visibility 0s; }
+  }
+
+  .nav-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 55;
+    appearance: none; -webkit-appearance: none; border: 0; padding: 0;
+    background: rgba(26, 51, 0, 0.32); cursor: pointer;
+  }
+
+  .content { height: auto; overflow: visible; }
+
+  /* The full-bleed graph should fill what's left under the topbar, not push a
+     second scroll region past it. */
+  .stage { height: calc(100vh - 52px); }
+
+  /* Keep the graph's floating panels within the viewport instead of clipping.
+     The search panel stays top-left; the inspector drops to a bottom sheet so
+     the two no longer stack on top of each other when a node is selected. */
+  .panel-search { width: calc(100vw - 32px); max-width: 320px; max-height: calc(100% - 220px); }
+  .detail {
+    top: auto; bottom: 16px; left: 16px; right: 16px;
+    width: auto; max-width: none; max-height: 45%;
+  }
+
+  .page { padding: 18px 14px 32px; }
+  .page-title { font-size: 24px; }
+}

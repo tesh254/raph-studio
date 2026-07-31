@@ -10,11 +10,7 @@ import {
   type Timeline,
 } from '@/lib/api';
 import TimelineChart from '@/components/TimelineChart';
-
-const KNOWN = ['func', 'type', 'file', 'doc', 'doc_chunk', 'file_chunk', 'markdown_chunk', 'memory', 'const', 'var'];
-function badgeClass(type: string): string {
-  return 'badge ' + (KNOWN.includes(type) ? type : 'other');
-}
+import { badgeClass } from '@/lib/badges';
 
 function relTime(iso?: string): string {
   if (!iso) return '';
@@ -88,8 +84,12 @@ export default function AttributionPage() {
   return (
     <div className="page">
       {offline && (
-        <div className="card blush" style={{ marginBottom: 20 }}>
-          Can&apos;t reach the raph studio API. Run <code>raph studio</code> locally and check the URL in the top bar.
+        <div className="notice notice-bad" role="alert">
+          <div>
+            <b>Can&apos;t reach the raph studio API.</b>
+            <div>Run <code>raph studio</code> locally and check the URL in the sidebar.</div>
+          </div>
+          <button type="button" className="btn" onClick={refresh}>Retry</button>
         </div>
       )}
 

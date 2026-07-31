@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
-import Sidebar from '@/components/Sidebar';
+import AppShell from '@/components/AppShell';
 
 const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -29,10 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${bricolage.variable} ${inter.variable} ${robotoMono.variable}`}>
       <body>
-        <div className="shell">
-          <Sidebar />
-          <main className="content">{children}</main>
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
