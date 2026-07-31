@@ -1,0 +1,40 @@
+lib/badges.ts
+  s_a57d653f4a07a1::t_a4fbbac9b848d8 1-19
+app/globals.css
+  s_a57d653f4a07a1::t_c11752bd370348 509-551
+  s_a57d653f4a07a1::t_f39dc683804c3b 107-120,122-162
+app/page.tsx
+  s_a57d653f4a07a1::t_4694ad2b189705 8
+app/layout.tsx
+  s_a57d653f4a07a1::t_68a048fa2bd33a 4
+  s_a57d653f4a07a1::t_0aba294a3e6432 32
+app/attribution/page.tsx
+  s_a57d653f4a07a1::t_69b9ff82e2d75e 13
+  s_a57d653f4a07a1::t_e22723b320e464 87-92
+components/AppShell.tsx
+  s_a57d653f4a07a1::t_aed6075d519cc8 1-52
+components/Sidebar.tsx
+  s_a57d653f4a07a1::t_5202b1d5a1d320 12
+  s_a57d653f4a07a1::t_b644054e19ef03 75-80
+lib/api.ts
+  s_a57d653f4a07a1::t_47ab818d89b4b9 171-183
+  s_a57d653f4a07a1::t_13459ee3370bfb 186
+app/repos/page.tsx
+  s_a57d653f4a07a1::t_c403eca77ddfde 1-106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "5ea744ba69f8ab8c0e75173f4bea9ab4013d55aa",
+  "prompts": {},
+  "sessions": {
+    "s_a57d653f4a07a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "428b4258-1ebc-4b78-b6d9-14553fd3a686",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
