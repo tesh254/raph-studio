@@ -1,0 +1,25 @@
+app/projects/page.tsx
+  s_b616119b05f3cd::t_cf5fb04f1e278b 1-139
+app/globals.css
+  s_b616119b05f3cd::t_e7ffad5243538c 149-171
+components/Sidebar.tsx
+  s_b616119b05f3cd::t_93c3b8e01288ff 12
+lib/api.ts
+  s_b616119b05f3cd::t_793f3d915e15ba 184-199,203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "733d8ca90368405fd9573851bd6d3491807a15f8",
+  "prompts": {},
+  "sessions": {
+    "s_b616119b05f3cd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88cc8262-7d36-4d42-9a1c-6e2b6c7b31d9",
+        "model": "claude-opus-5"
+      },
+      "human_author": "tesh254 <ewachira254@gmail.com>"
+    }
+  }
+}
