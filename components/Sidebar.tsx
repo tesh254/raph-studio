@@ -9,6 +9,7 @@ type Conn = 'connecting' | 'ok' | 'bad';
 
 const NAV: { href: string; label: string; icon: string; hint: string }[] = [
   { href: '/', label: 'Graph', icon: '◉', hint: 'explore the knowledge graph' },
+  { href: '/projects/', label: 'Projects', icon: '◈', hint: 'projects & the repos under them' },
   { href: '/repos/', label: 'Repos', icon: '⧉', hint: 'indexed codebases' },
   { href: '/memory/', label: 'Memory', icon: '✦', hint: 'durable knowledge & rules' },
   { href: '/handovers/', label: 'Handovers', icon: '⇄', hint: 'work transfers between agents' },

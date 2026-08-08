@@ -181,9 +181,26 @@ export interface Repo {
   last_indexed?: string;
 }
 
+// A project, as returned by /api/projects. A project is what memories and
+// documents are scoped to — one project can hold several indexed roots (a
+// monorepo's packages), which is why repos alone can't explain what an agent
+// recalls in a given directory. `id` is that scope value.
+export interface Project {
+  id: string;
+  name: string;
+  root: string;
+  workspaces: Repo[] | null;
+  files: number;
+  directories: number;
+  memories: number;
+  documents: number;
+  last_indexed?: string;
+}
+
 export const api = {
   stats: (signal?: AbortSignal) => getJSON<Stats>('/api/stats', signal),
   repos: (signal?: AbortSignal) => getJSON<{ items: Repo[] }>('/api/repos', signal),
+  projects: (signal?: AbortSignal) => getJSON<{ items: Project[] }>('/api/projects', signal),
   analytics: (signal?: AbortSignal) => getJSON<Analytics>('/api/analytics?limit=12', signal),
   timeline: (days = 30, signal?: AbortSignal) =>
     getJSON<Timeline>(`/api/timeline?days=${days}`, signal),
